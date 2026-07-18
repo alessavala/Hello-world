@@ -1,0 +1,435 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CREATOR
+  BRAND
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum VerificationLevel {
+  REGISTERED
+  IDENTITY
+  VERIFIED_COMMERCE
+  PRO
+}
+
+enum Marketplace {
+  AMAZON
+  MERCADO_LIBRE
+  TIKTOK_SHOP
+}
+
+enum SocialPlatform {
+  TIKTOK
+  INSTAGRAM
+  YOUTUBE
+  FACEBOOK
+}
+
+enum CompensationType {
+  PRODUCT_ONLY
+  FIXED_FEE
+  EXTERNAL_COMMISSION
+  HYBRID
+}
+
+enum CampaignStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  CLOSED
+  CANCELLED
+}
+
+enum ApplicationSource {
+  APPLICATION
+  INVITATION
+}
+
+enum ApplicationStatus {
+  APPLIED
+  INVITED
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum CollaborationStatus {
+  ACCEPTED
+  SAMPLE_PENDING
+  SAMPLE_SENT
+  SAMPLE_RECEIVED
+  CONTENT_IN_PROGRESS
+  DRAFT_SUBMITTED
+  CHANGES_REQUESTED
+  FINAL_SUBMITTED
+  APPROVED
+  PUBLISHED
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+enum DeliverableStatus {
+  PENDING
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  PUBLISHED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+model User {
+  id               String                @id @default(cuid())
+  email            String                @unique
+  passwordHash     String
+  role             UserRole
+  status           UserStatus            @default(ACTIVE)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  creator          CreatorProfile?
+  brand            BrandProfile?
+  reviewsGiven     Review[]              @relation("ReviewsGiven")
+  reviewsReceived  Review[]              @relation("ReviewsReceived")
+  activityLogs     ActivityLog[]
+  invitationsSent  CampaignApplication[] @relation("InvitationsSent")
+  disputesOpened   Dispute[]             @relation("DisputesOpened")
+  disputesResolved Dispute[]             @relation("DisputesResolved")
+
+  @@index([role, status])
+}
+
+model CreatorProfile {
+  id                String            @id @default(cuid())
+  userId            String            @unique
+  displayName       String
+  bio               String?
+  country           String
+  city              String?
+  profilePhotoUrl   String?
+  baseRate          Decimal?          @db.Decimal(12, 2)
+  turnaroundDays    Int               @default(14)
+  acceptsProduct    Boolean           @default(true)
+  acceptsFixedFee   Boolean           @default(true)
+  acceptsCommission Boolean           @default(true)
+  verificationLevel VerificationLevel @default(REGISTERED)
+
+  // Derived reputation metrics. Written only by ReputationService from real
+  // collaboration/review history - never accepted from a client DTO.
+  reliabilityScore   Float @default(50)
+  campaignsCompleted Int   @default(0)
+  onTimeDeliveryRate Float @default(0)
+  firstApprovalRate  Float @default(0)
+  disputeRate        Float @default(0)
+  brandRehireRate    Float @default(0)
+  avgRating          Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialAccounts SocialAccount[]
+  marketplaces   CreatorMarketplace[]
+  categories     CreatorCategory[]
+  portfolioItems PortfolioItem[]
+  applications   CampaignApplication[]
+  collaborations Collaboration[]
+
+  @@index([country, reliabilityScore])
+  @@index([reliabilityScore])
+  @@index([verificationLevel])
+}
+
+model BrandProfile {
+  id                 String     @id @default(cuid())
+  userId             String     @unique
+  businessName       String
+  website            String?
+  logoUrl            String?
+  country            String
+  description        String?
+  verificationStatus Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products           Product[]
+  campaigns          Campaign[]
+}
+
+model SocialAccount {
+  id             String         @id @default(cuid())
+  creatorId      String
+  platform       SocialPlatform
+  username       String
+  profileUrl     String
+  followers      Int            @default(0)
+  averageViews   Int            @default(0)
+  engagementRate Float          @default(0)
+  verifiedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  creator        CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([creatorId, platform, username])
+  @@index([platform, followers])
+}
+
+model CreatorMarketplace {
+  id          String         @id @default(cuid())
+  creatorId   String
+  marketplace Marketplace
+  profileUrl  String?
+  verified    Boolean        @default(false)
+  evidenceUrl String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  creator     CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([creatorId, marketplace])
+  @@index([marketplace, verified])
+}
+
+model Category {
+  id        String            @id @default(cuid())
+  name      String            @unique
+  slug      String            @unique
+  creators  CreatorCategory[]
+  products  Product[]
+  campaigns Campaign[]
+  portfolio PortfolioItem[]
+}
+
+model CreatorCategory {
+  creatorId  String
+  categoryId String
+  createdAt  DateTime       @default(now())
+  creator    CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([creatorId, categoryId])
+}
+
+model PortfolioItem {
+  id           String         @id @default(cuid())
+  creatorId    String
+  categoryId   String?
+  title        String
+  contentUrl   String
+  thumbnailUrl String?
+  platform     SocialPlatform
+  views        Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  creator      CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  category     Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([creatorId])
+}
+
+model Product {
+  id          String       @id @default(cuid())
+  brandId     String
+  categoryId  String
+  name        String
+  description String?
+  marketplace Marketplace
+  externalId  String?
+  productUrl  String
+  imageUrl    String?
+  price       Decimal?     @db.Decimal(12, 2)
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  brand       BrandProfile @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id])
+  campaigns   Campaign[]
+
+  @@index([brandId])
+  @@index([marketplace, categoryId])
+}
+
+model Campaign {
+  id                     String           @id @default(cuid())
+  brandId                String
+  productId              String?
+  categoryId             String
+  name                   String
+  description            String
+  marketplace            Marketplace
+  compensationType       CompensationType
+  fixedAmount            Decimal?         @db.Decimal(12, 2)
+  creatorsRequired       Int              @default(1)
+  deliverableDescription String
+  applicationDeadline    DateTime?
+  deliveryDays           Int              @default(14)
+  minFollowers           Int              @default(0)
+  minAverageViews        Int              @default(0)
+  targetCountry          String?
+  status                 CampaignStatus   @default(DRAFT)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  brand          BrandProfile          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  product        Product?              @relation(fields: [productId], references: [id])
+  category       Category              @relation(fields: [categoryId], references: [id])
+  applications   CampaignApplication[]
+  collaborations Collaboration[]
+
+  @@index([status, marketplace, categoryId])
+  @@index([brandId, status])
+}
+
+model CampaignApplication {
+  id              String            @id @default(cuid())
+  campaignId      String
+  creatorId       String
+  source          ApplicationSource @default(APPLICATION)
+  invitedByUserId String?
+  matchScore      Float             @default(0)
+  proposedRate    Decimal?          @db.Decimal(12, 2)
+  message         String?
+  status          ApplicationStatus @default(APPLIED)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  campaign      Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator       CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  invitedBy     User?          @relation("InvitationsSent", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+  collaboration Collaboration?
+
+  @@unique([campaignId, creatorId])
+  @@index([creatorId, status])
+  @@index([campaignId, status])
+}
+
+model Collaboration {
+  id              String              @id @default(cuid())
+  campaignId      String
+  creatorId       String
+  applicationId   String              @unique
+  status          CollaborationStatus @default(ACCEPTED)
+  acceptedAt      DateTime            @default(now())
+  deadlineAt      DateTime
+  completedAt     DateTime?
+  trackingCarrier String?
+  trackingNumber  String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  campaign     Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator      CreatorProfile      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  application  CampaignApplication @relation(fields: [applicationId], references: [id])
+  deliverables Deliverable[]
+  disputes     Dispute[]
+  reviews      Review[]
+
+  @@index([status, deadlineAt])
+  @@index([creatorId, status])
+}
+
+model Deliverable {
+  id              String              @id @default(cuid())
+  collaborationId String
+  title           String
+  contentType     String
+  draftUrl        String?
+  finalUrl        String?
+  publicationUrl  String?
+  status          DeliverableStatus   @default(PENDING)
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  collaboration   Collaboration       @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  reviews         DeliverableReview[]
+
+  @@index([collaborationId, status])
+}
+
+model DeliverableReview {
+  id            String            @id @default(cuid())
+  deliverableId String
+  reviewerId    String
+  comments      String
+  decision      DeliverableStatus
+  createdAt     DateTime          @default(now())
+  deliverable   Deliverable       @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  @@index([deliverableId])
+}
+
+model Review {
+  id              String        @id @default(cuid())
+  collaborationId String
+  reviewerUserId  String
+  reviewedUserId  String
+  rating          Int
+  communication   Int
+  quality         Int
+  punctuality     Int
+  comments        String?
+  // Only meaningful when a BRAND is reviewing a CREATOR - captures the
+  // "would rehire" signal that feeds brandRehireRate on the creator passport.
+  wouldWorkAgain  Boolean?
+  createdAt       DateTime      @default(now())
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  reviewer        User          @relation("ReviewsGiven", fields: [reviewerUserId], references: [id])
+  reviewed        User          @relation("ReviewsReceived", fields: [reviewedUserId], references: [id])
+
+  @@unique([collaborationId, reviewerUserId])
+  @@index([reviewedUserId])
+}
+
+model Dispute {
+  id               String        @id @default(cuid())
+  collaborationId  String
+  openedByUserId   String
+  reason           String
+  description      String
+  status           DisputeStatus @default(OPEN)
+  resolution       String?
+  resolvedByUserId String?
+  resolvedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  collaboration    Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  openedBy         User          @relation("DisputesOpened", fields: [openedByUserId], references: [id])
+  resolvedBy       User?         @relation("DisputesResolved", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([collaborationId])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  entityType String
+  entityId   String?
+  action     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+}
