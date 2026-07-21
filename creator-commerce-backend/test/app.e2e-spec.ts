@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
+import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/http-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -9,6 +10,7 @@ describe('Creator Commerce API (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let server: any;
+  let baseUrl: string;
 
   const unique = Date.now();
   const creatorEmail = `e2e-creator-${unique}@test.com`;
@@ -28,8 +30,11 @@ describe('Creator Commerce API (e2e)', () => {
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     app.useGlobalFilters(new AllExceptionsFilter());
-    await app.init();
+    // A real listening port is required here (not just app.init()) so the
+    // socket.io-client used by the chat tests has something to connect to.
+    await app.listen(0);
     server = app.getHttpServer();
+    baseUrl = await app.getUrl();
     prisma = app.get(PrismaService);
 
     const category = await prisma.category.upsert({
@@ -375,6 +380,140 @@ describe('Creator Commerce API (e2e)', () => {
         .send({ accept: false })
         .expect(200);
       expect(respondRes.body.status).toBe('REJECTED');
+    });
+  });
+
+  describe('chat', () => {
+    let conversationId: string;
+    const sockets: Socket[] = [];
+
+    function connectSocket(token: string): Promise<Socket> {
+      const socket = io(`${baseUrl}/chat`, { auth: { token }, transports: ['websocket'], forceNew: true });
+      sockets.push(socket);
+      return new Promise((resolve, reject) => {
+        socket.on('connect', () => resolve(socket));
+        socket.on('connect_error', reject);
+      });
+    }
+
+    function joinConversation(socket: Socket, id: string): Promise<{ ok: boolean }> {
+      return new Promise((resolve) => socket.emit('conversation:join', { conversationId: id }, resolve));
+    }
+
+    afterAll(() => {
+      for (const socket of sockets) socket.disconnect();
+    });
+
+    it('rejects a socket that connects with an invalid token', async () => {
+      const socket = io(`${baseUrl}/chat`, { auth: { token: 'not-a-real-token' }, transports: ['websocket'], forceNew: true });
+      sockets.push(socket);
+      await new Promise<void>((resolve) => socket.on('disconnect', () => resolve()));
+    });
+
+    it('lets a brand start a conversation with a creator', async () => {
+      const res = await request(server)
+        .post('/api/v1/chat/conversations')
+        .set('Authorization', `Bearer ${brandToken}`)
+        .send({ counterpartId: creatorProfileId })
+        .expect(201);
+      conversationId = res.body.id;
+      expect(res.body.brand.userId).toBeDefined();
+      expect(res.body.creator.id).toBe(creatorProfileId);
+    });
+
+    it('is idempotent - starting again returns the same conversation instead of a duplicate', async () => {
+      const res = await request(server)
+        .post('/api/v1/chat/conversations')
+        .set('Authorization', `Bearer ${brandToken}`)
+        .send({ counterpartId: creatorProfileId })
+        .expect(201);
+      expect(res.body.id).toBe(conversationId);
+
+      const count = await prisma.conversation.count({ where: { id: conversationId } });
+      expect(count).toBe(1);
+    });
+
+    it('appears in the conversation list for both parties', async () => {
+      const brandList = await request(server).get('/api/v1/chat/conversations').set('Authorization', `Bearer ${brandToken}`).expect(200);
+      expect(brandList.body.data.some((c: any) => c.id === conversationId)).toBe(true);
+
+      const creatorList = await request(server).get('/api/v1/chat/conversations').set('Authorization', `Bearer ${creatorToken}`).expect(200);
+      expect(creatorList.body.data.some((c: any) => c.id === conversationId)).toBe(true);
+    });
+
+    it('rejects a stranger reading or joining the conversation', async () => {
+      await request(server).get(`/api/v1/chat/conversations/${conversationId}/messages`).set('Authorization', `Bearer ${otherBrandToken}`).expect(403);
+
+      const strangerSocket = await connectSocket(otherBrandToken);
+      const ack = await joinConversation(strangerSocket, conversationId);
+      expect(ack.ok).toBe(false);
+    });
+
+    it('delivers a message to the creator over the websocket in real time', async () => {
+      const creatorSocket = await connectSocket(creatorToken);
+      const joinAck = await joinConversation(creatorSocket, conversationId);
+      expect(joinAck.ok).toBe(true);
+
+      const pushed = new Promise<any>((resolve) => creatorSocket.once('message:new', resolve));
+
+      const sendRes = await request(server)
+        .post(`/api/v1/chat/conversations/${conversationId}/messages`)
+        .set('Authorization', `Bearer ${brandToken}`)
+        .send({ body: 'Hola! Nos interesa tu perfil para una campaña' })
+        .expect(201);
+
+      const message = await pushed;
+      expect(message.body).toBe('Hola! Nos interesa tu perfil para una campaña');
+      expect(sendRes.body.id).toBe(message.id);
+      expect(sendRes.body.status).toBe('SENT');
+    });
+
+    it('rejects an empty message body', async () => {
+      await request(server)
+        .post(`/api/v1/chat/conversations/${conversationId}/messages`)
+        .set('Authorization', `Bearer ${brandToken}`)
+        .send({ body: '' })
+        .expect(400);
+    });
+
+    it('rejects a stranger sending a message into the conversation', async () => {
+      await request(server)
+        .post(`/api/v1/chat/conversations/${conversationId}/messages`)
+        .set('Authorization', `Bearer ${otherBrandToken}`)
+        .send({ body: 'sneaky' })
+        .expect(403);
+    });
+
+    it('returns messages oldest-first and counts the unread message for the recipient', async () => {
+      const history = await request(server)
+        .get(`/api/v1/chat/conversations/${conversationId}/messages`)
+        .set('Authorization', `Bearer ${creatorToken}`)
+        .expect(200);
+      expect(history.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(history.body.data[0].body).toBe('Hola! Nos interesa tu perfil para una campaña');
+
+      const creatorList = await request(server).get('/api/v1/chat/conversations').set('Authorization', `Bearer ${creatorToken}`).expect(200);
+      const conversation = creatorList.body.data.find((c: any) => c.id === conversationId);
+      expect(conversation.unreadCount).toBeGreaterThanOrEqual(1);
+      expect(conversation.lastMessage.body).toBe('Hola! Nos interesa tu perfil para una campaña');
+    });
+
+    it('marks messages as read and broadcasts a read receipt to the other party', async () => {
+      const brandSocket = await connectSocket(brandToken);
+      const joinAck = await joinConversation(brandSocket, conversationId);
+      expect(joinAck.ok).toBe(true);
+
+      const readReceipt = new Promise<any>((resolve) => brandSocket.once('conversation:read', resolve));
+
+      await request(server).patch(`/api/v1/chat/conversations/${conversationId}/read`).set('Authorization', `Bearer ${creatorToken}`).expect(200);
+
+      const event = await readReceipt;
+      expect(event.conversationId).toBe(conversationId);
+      expect(event.readerUserId).toBeDefined();
+
+      const creatorList = await request(server).get('/api/v1/chat/conversations').set('Authorization', `Bearer ${creatorToken}`).expect(200);
+      const conversation = creatorList.body.data.find((c: any) => c.id === conversationId);
+      expect(conversation.unreadCount).toBe(0);
     });
   });
 });

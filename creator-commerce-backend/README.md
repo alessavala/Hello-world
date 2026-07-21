@@ -10,8 +10,8 @@ No incluye (fuera de alcance del MVP, ver "Próxima fase" al final): Shopify, si
 
 Monolito modular en NestJS que implementa el flujo completo de un marketplace de creator commerce:
 
-- **CREATOR**: perfil, redes sociales, afiliaciones a marketplaces, portafolio, categorías/nichos, búsqueda y postulación a campañas, invitaciones, colaboraciones, entregables, reviews, reputación (Creator Passport).
-- **BRAND**: perfil, productos, campañas, descubrimiento de creadores, invitaciones, revisión de postulaciones, gestión de colaboraciones, entregables, reviews.
+- **CREATOR**: perfil, redes sociales, afiliaciones a marketplaces, portafolio, categorías/nichos, búsqueda y postulación a campañas, invitaciones, colaboraciones, entregables, reviews, reputación (Creator Passport), chat directo con marcas.
+- **BRAND**: perfil, productos, campañas, descubrimiento de creadores, invitaciones, revisión de postulaciones, gestión de colaboraciones, entregables, reviews, chat directo con creadores.
 - **ADMIN**: dashboard, gestión de usuarios, verificación de creadores/marcas/marketplaces, mediación de disputas, auditoría de actividad.
 
 ## 2. Arquitectura
@@ -39,6 +39,7 @@ src/
   deliverables/       entregables, revisiones, publicación
   reviews/           calificaciones bidireccionales
   disputes/          apertura y mediación de disputas
+  chat/              mensajería 1:1 marca <-> creador (REST + WebSocket en tiempo real)
   admin/             panel administrativo
 ```
 
@@ -49,6 +50,7 @@ src/
 - **Invitaciones sin tabla nueva**: `CampaignApplication` tiene un campo `source` (`APPLICATION` | `INVITATION`). Una invitación es una aplicación creada por la marca con estado `INVITED`; el creador la acepta/rechaza. Esto reutiliza el mismo unique constraint `[campaignId, creatorId]`, evitando que un creador tenga simultáneamente una aplicación y una invitación activas para la misma campaña.
 - **Requisitos de campaña embebidos**: en vez de una tabla `CampaignRequirement` separada, los campos (`minFollowers`, `minAverageViews`, `targetCountry`, `deliverableDescription`, etc.) viven directamente en `Campaign`. Es una relación 1:1 forzosa sin necesidad real de independencia de ciclo de vida, así que separarla sería complejidad sin beneficio.
 - **Reputación 100% derivada**: ningún DTO acepta `reliabilityScore` ni las demás métricas del passport. Se recalculan server-side (`ReputationService.recompute`) tras completar una colaboración, crear una review o resolver una disputa.
+- **Chat sin acoplar a una colaboración**: un thread es único por par `(brandId, creatorId)` y puede abrirse desde discovery, antes de que exista ninguna aplicación/invitación/colaboración — así una marca puede negociar con un creador antes de comprometerse formalmente. Si ya existe una `Collaboration` entre ese par, el thread queda enlazado a ella automáticamente (solo informativo). La persistencia del mensaje vive únicamente en `ChatService` (vía REST); el `ChatGateway` (Socket.IO) solo autentica el socket, gestiona membresía de salas y hace `broadcast` — un único camino de escritura, sin lógica de negocio duplicada entre HTTP y WebSocket.
 
 ## 3. Requisitos
 
@@ -93,7 +95,7 @@ createdb creator_commerce
 
 ## 8. Prisma
 
-El schema completo está en `prisma/schema.prisma`: 18 modelos (`User`, `CreatorProfile`, `BrandProfile`, `SocialAccount`, `CreatorMarketplace`, `Category`, `CreatorCategory`, `PortfolioItem`, `Product`, `Campaign`, `CampaignApplication`, `Collaboration`, `Deliverable`, `DeliverableReview`, `Review`, `Dispute`, `ActivityLog`), con índices compuestos para las consultas de discovery/listing más frecuentes, `onDelete: Cascade` donde la relación es de propiedad exclusiva, y unique constraints que hacen imposible a nivel de base de datos: doble aplicación a la misma campaña, doble colaboración para la misma aplicación, doble review del mismo usuario a la misma colaboración, doble red social del mismo tipo/usuario.
+El schema completo está en `prisma/schema.prisma`: 19 modelos (`User`, `CreatorProfile`, `BrandProfile`, `SocialAccount`, `CreatorMarketplace`, `Category`, `CreatorCategory`, `PortfolioItem`, `Product`, `Campaign`, `CampaignApplication`, `Collaboration`, `Deliverable`, `DeliverableReview`, `Review`, `Dispute`, `ActivityLog`, `Conversation`, `Message`), con índices compuestos para las consultas de discovery/listing más frecuentes, `onDelete: Cascade` donde la relación es de propiedad exclusiva, y unique constraints que hacen imposible a nivel de base de datos: doble aplicación a la misma campaña, doble colaboración para la misma aplicación, doble review del mismo usuario a la misma colaboración, doble red social del mismo tipo/usuario.
 
 ```bash
 npx prisma generate      # regenerar el cliente tras cambios de schema
@@ -159,7 +161,9 @@ cp .env.test.example .env.test
 DATABASE_URL="postgresql://creator:creator@localhost:5432/creator_commerce_test?schema=public" npx prisma migrate deploy
 ```
 
-`test/app.e2e-spec.ts` cubre: registro/login, rechazo de registro duplicado y de auto-registro como ADMIN, guard de roles, mass-assignment protection (un cliente no puede setear `reliabilityScore`), ownership cruzado entre marcas (producto y campaña de otra marca), ciclo de vida de campaña con transiciones inválidas rechazadas, aplicación duplicada rechazada (409), aceptación de aplicación creando una única colaboración (sin duplicados aunque se acepte dos veces), transición ilegal de colaboración rechazada, flujo completo de entregables hasta `COMPLETED`, reviews (incluida la duplicada rechazada) y verificación de que el Creator Passport se recalcula con datos reales, y el flujo completo de invitación (crear, aceptar/rechazar).
+`test/app.e2e-spec.ts` cubre: registro/login, rechazo de registro duplicado y de auto-registro como ADMIN, guard de roles, mass-assignment protection (un cliente no puede setear `reliabilityScore`), ownership cruzado entre marcas (producto y campaña de otra marca), ciclo de vida de campaña con transiciones inválidas rechazadas, aplicación duplicada rechazada (409), aceptación de aplicación creando una única colaboración (sin duplicados aunque se acepte dos veces), transición ilegal de colaboración rechazada, flujo completo de entregables hasta `COMPLETED`, reviews (incluida la duplicada rechazada) y verificación de que el Creator Passport se recalcula con datos reales, el flujo completo de invitación (crear, aceptar/rechazar), y chat: inicio de conversación idempotente, ownership (un extraño no puede leer/escribir/unirse a la sala), entrega de mensaje en tiempo real vía WebSocket con `socket.io-client` real (no mockeado), y recibo de lectura broadcast al otro lado.
+
+Estado actual: 18 unit tests + 44 e2e tests, todos pasando.
 
 ## 14. Swagger
 
@@ -169,8 +173,8 @@ DATABASE_URL="postgresql://creator:creator@localhost:5432/creator_commerce_test?
 
 | Rol | Puede |
 |---|---|
-| `CREATOR` | Gestionar su propio perfil, redes sociales, marketplaces, categorías, portafolio; buscar/postularse a campañas; responder invitaciones; avanzar su lado de la colaboración; subir/publicar entregables; calificar a la marca; abrir disputas |
-| `BRAND` | Gestionar su propio perfil, productos, campañas; buscar/invitar creadores; revisar postulaciones (shortlist/aceptar/rechazar); avanzar su lado de la colaboración; crear/revisar entregables; calificar al creador; abrir disputas |
+| `CREATOR` | Gestionar su propio perfil, redes sociales, marketplaces, categorías, portafolio; buscar/postularse a campañas; responder invitaciones; avanzar su lado de la colaboración; subir/publicar entregables; calificar a la marca; abrir disputas; chatear con marcas |
+| `BRAND` | Gestionar su propio perfil, productos, campañas; buscar/invitar creadores; revisar postulaciones (shortlist/aceptar/rechazar); avanzar su lado de la colaboración; crear/revisar entregables; calificar al creador; abrir disputas; chatear con creadores |
 | `ADMIN` | Dashboard, listar usuarios/creadores/marcas/campañas/colaboraciones/disputas, suspender usuarios, verificar creadores/marcas/afiliaciones a marketplace, mediar y resolver disputas, ver log de actividad |
 
 **El role guard nunca es la única defensa**: cada servicio valida además el *ownership* del recurso (una marca no puede editar la campaña de otra marca; un creador no puede modificar la postulación de otro creador; un extraño a una colaboración recibe 403 aunque su rol sea correcto).
@@ -242,6 +246,12 @@ GET    /disputes/me
 PATCH  /disputes/:id/review      (admin)
 PATCH  /disputes/:id/resolve     (admin)
 
+POST   /chat/conversations                        (inicia o recupera el thread con counterpartId)
+GET    /chat/conversations                         (paginado, con lastMessage + unreadCount)
+GET    /chat/conversations/:id/messages             (paginado, orden cronológico)
+POST   /chat/conversations/:id/messages             (persiste y hace broadcast por WebSocket)
+PATCH  /chat/conversations/:id/read
+
 GET    /admin/dashboard
 GET    /admin/users | /creators | /brands | /campaigns | /collaborations | /disputes | /activity
 PATCH  /admin/users/:id/status
@@ -249,6 +259,28 @@ PATCH  /admin/creators/:id/verify
 PATCH  /admin/marketplaces/:id/verify
 PATCH  /admin/brands/:id/verify
 ```
+
+### Chat en tiempo real (WebSocket)
+
+Además de los endpoints REST de arriba (que son la única vía de escritura de mensajes), el servidor expone un namespace Socket.IO en `/chat` sobre el mismo puerto HTTP.
+
+```js
+const socket = io('http://localhost:4000/chat', { auth: { token: accessToken } });
+
+socket.emit('conversation:join', { conversationId }, (ack) => {
+  // ack = { ok: true } si sos parte de la conversación, { ok: false } si no
+});
+
+socket.on('message:new', (message) => { /* nuevo mensaje en una sala que ya joineaste */ });
+socket.on('conversation:updated', ({ conversationId }) => { /* refrescá la lista de conversaciones */ });
+socket.on('conversation:read', ({ conversationId, readerUserId }) => { /* el otro lado leyó tus mensajes */ });
+
+socket.emit('conversation:leave', { conversationId });
+```
+
+- La conexión se autentica con el mismo JWT que la API REST (`auth.token` en el handshake); un token inválido o ausente desconecta el socket inmediatamente.
+- `conversation:join` valida ownership server-side (no confía en el cliente) antes de unir el socket a la sala `conversation:<id>`.
+- Enviar un mensaje sigue siendo `POST /chat/conversations/:id/messages` — el gateway nunca persiste, solo hace `broadcast` después de que el REST endpoint confirma la escritura, evitando dos caminos de verdad para el mismo dato.
 
 ## 17. Flujo de una campaña
 

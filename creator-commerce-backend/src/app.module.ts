@@ -16,6 +16,7 @@ import { CollaborationsModule } from './collaborations/collaborations.module';
 import { DeliverablesModule } from './deliverables/deliverables.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { DisputesModule } from './disputes/disputes.module';
+import { ChatModule } from './chat/chat.module';
 import { AdminModule } from './admin/admin.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { AdminModule } from './admin/admin.module';
     DeliverablesModule,
     ReviewsModule,
     DisputesModule,
+    ChatModule,
     AdminModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
