@@ -30,7 +30,7 @@ export function CreatorCard({ creator }: { creator: CreatorProfile }) {
         )}
 
         {isVerified && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-surface/95 px-3 py-1 text-xs font-semibold shadow-sm">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-accent-olive px-3 py-1 text-xs font-semibold text-accent-olive-foreground shadow-sm">
             ⭐ Verificado
           </span>
         )}

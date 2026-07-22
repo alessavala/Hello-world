@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Button } from "./button";
 import { Input, Textarea } from "./input";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { BrandProfile } from "@/lib/types";
 
@@ -42,7 +43,7 @@ export function BrandProfileForm() {
       .catch((err) => {
         // A brand profile doesn't exist yet - that's expected for a brand new account, not an error to show.
         if (!(err instanceof ApiError && err.status === 404)) {
-          setError(err instanceof ApiError ? err.message : "No pudimos cargar tu perfil.");
+          setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos cargar tu perfil.");
         }
       })
       .finally(() => setIsLoading(false));
@@ -68,7 +69,7 @@ export function BrandProfileForm() {
       });
       setSavedAt(Date.now());
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No pudimos guardar tu perfil.");
+      setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos guardar tu perfil.");
     } finally {
       setIsSaving(false);
     }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { CreatorPassport, CreatorProfile } from "@/lib/types";
 
@@ -62,7 +63,7 @@ function CreatorDetail() {
         setCreator(creatorRes);
         setPassport(passportRes);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No pudimos cargar este perfil."))
+      .catch((err) => setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos cargar este perfil."))
       .finally(() => setIsLoading(false));
   }, [token, params.id]);
 
@@ -86,7 +87,7 @@ function CreatorDetail() {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">{creator.displayName}</h1>
             {passport?.identityVerified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-pill px-3 py-1 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-olive px-3 py-1 text-xs font-semibold text-accent-olive-foreground">
                 ⭐ Verificado
               </span>
             )}
@@ -129,7 +130,7 @@ function CreatorDetail() {
               <span
                 key={m.id}
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium ${
-                  m.verified ? "border-accent bg-accent/10" : "border-border bg-surface text-muted"
+                  m.verified ? "border-accent-olive bg-accent-olive/10 text-accent-olive" : "border-border bg-surface text-muted"
                 }`}
               >
                 {MARKETPLACE_LABEL[m.marketplace] ?? m.marketplace}

@@ -6,6 +6,7 @@ import { SocialAccountsSection } from "./creator-profile/social-accounts-section
 import { MarketplacesSection } from "./creator-profile/marketplaces-section";
 import { CategoriesSection } from "./creator-profile/categories-section";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { CreatorProfile } from "@/lib/types";
 
@@ -21,7 +22,7 @@ export function CreatorProfileForm() {
       .then(setCreator)
       .catch((err) => {
         if (!(err instanceof ApiError && err.status === 404)) {
-          setError(err instanceof ApiError ? err.message : "No pudimos cargar tu perfil.");
+          setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos cargar tu perfil.");
         }
       });
   }, [token]);

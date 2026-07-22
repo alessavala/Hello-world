@@ -1,14 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf3e7;
+  --background: #fff8f2;
   --surface: #ffffff;
-  --foreground: #1c1917;
-  --muted: #78716c;
-  --border: #eae0d0;
-  --accent: #f0b429;
-  --accent-foreground: #1c1917;
-  --brand-pill: #efe7d8;
+  --foreground: #24170f;
+  --muted: #8a7264;
+  --border: #f4e2d3;
+
+  /* Primary CTA - vibrant coral orange */
+  --accent: #f2542d;
+  --accent-foreground: #ffffff;
+
+  /* Secondary highlight - bubblegum pink */
+  --accent-pink: #ef5d9e;
+  --accent-pink-foreground: #ffffff;
+
+  /* Tertiary highlight - olive/lime green */
+  --accent-olive: #7c9a3c;
+  --accent-olive-foreground: #ffffff;
+
+  /* Warm yellow, sparingly for small highlights */
+  --accent-yellow: #f2b134;
+  --accent-yellow-foreground: #24170f;
+
+  --brand-pill: #fde3d3;
 }
 
 @theme inline {
@@ -19,6 +34,12 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-pink-foreground: var(--accent-pink-foreground);
+  --color-accent-olive: var(--accent-olive);
+  --color-accent-olive-foreground: var(--accent-olive-foreground);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-yellow-foreground: var(--accent-yellow-foreground);
   --color-brand-pill: var(--brand-pill);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

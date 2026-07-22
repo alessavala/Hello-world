@@ -6,6 +6,7 @@ import { Button } from "@/components/button";
 import { CampaignCard } from "@/components/campaign-card";
 import { CampaignWizard } from "@/components/campaign-wizard";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { Campaign, CampaignApplication, CampaignStatus, Paginated } from "@/lib/types";
 
@@ -34,7 +35,7 @@ function BrandCampaigns() {
     if (!token) return;
     apiFetch<Paginated<Campaign>>("/campaigns/mine", { token, query: { pageSize: 50 } })
       .then((res) => setCampaigns(res.data))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No pudimos cargar tus campañas."))
+      .catch((err) => setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos cargar tus campañas."))
       .finally(() => setIsLoading(false));
   }, [token]);
 
@@ -110,7 +111,7 @@ function CreatorCampaigns() {
         setCampaigns(campaignsRes.data);
         setAppliedCampaignIds(new Set(applicationsRes.data.map((a) => a.campaignId)));
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No pudimos cargar las campañas."))
+      .catch((err) => setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos cargar las campañas."))
       .finally(() => setIsLoading(false));
   }, [token]);
 
@@ -128,7 +129,7 @@ function CreatorCampaigns() {
       setMessage(`Te postulaste a "${campaign.name}".`);
       load();
     } catch (err) {
-      setMessage(err instanceof ApiError ? err.message : "No pudimos enviar tu postulación.");
+      setMessage(err instanceof ApiError ? translateApiError(err.message) : "No pudimos enviar tu postulación.");
     }
   }
 

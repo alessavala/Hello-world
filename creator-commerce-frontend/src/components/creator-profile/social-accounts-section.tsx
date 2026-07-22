@@ -5,6 +5,7 @@ import { Button } from "../button";
 import { Input } from "../input";
 import { Select } from "../select";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { SocialAccount, SocialPlatform } from "@/lib/types";
 
@@ -49,7 +50,7 @@ export function SocialAccountsSection({ accounts, onChange }: { accounts: Social
       setShowForm(false);
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No pudimos agregar la red social.");
+      setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos agregar la red social.");
     } finally {
       setIsSaving(false);
     }

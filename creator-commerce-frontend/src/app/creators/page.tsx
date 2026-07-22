@@ -6,6 +6,7 @@ import { Chip } from "@/components/chip";
 import { CreatorCard } from "@/components/creator-card";
 import { Button } from "@/components/button";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { Category, CreatorProfile, Marketplace, Paginated, VerificationLevel } from "@/lib/types";
 
@@ -62,7 +63,7 @@ function CreatorsDiscovery() {
       });
       setResult(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No pudimos cargar los creadores.");
+      setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos cargar los creadores.");
     } finally {
       setIsLoading(false);
     }

@@ -6,6 +6,7 @@ import { Chip } from "./chip";
 import { Input, Textarea } from "./input";
 import { Select } from "./select";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { Campaign, Category, CompensationType, Marketplace, Product } from "@/lib/types";
 
@@ -103,7 +104,7 @@ export function CampaignWizard({ onClose, onCreated }: { onClose: () => void; on
       });
       onCreated(campaign);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No pudimos crear la campaña.");
+      setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos crear la campaña.");
     } finally {
       setIsSaving(false);
     }

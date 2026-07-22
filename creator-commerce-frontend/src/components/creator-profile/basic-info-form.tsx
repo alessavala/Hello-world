@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "../button";
 import { Input, Textarea } from "../input";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { CreatorProfile } from "@/lib/types";
 
@@ -64,7 +65,7 @@ export function BasicInfoForm({ creator, onSaved }: { creator: CreatorProfile | 
       onSaved(updated);
       setSavedAt(Date.now());
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No pudimos guardar tu perfil.");
+      setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos guardar tu perfil.");
     } finally {
       setIsSaving(false);
     }

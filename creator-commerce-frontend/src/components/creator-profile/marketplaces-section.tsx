@@ -5,6 +5,7 @@ import { Button } from "../button";
 import { Input } from "../input";
 import { Select } from "../select";
 import { apiFetch, ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 import type { CreatorMarketplace, Marketplace } from "@/lib/types";
 
@@ -36,7 +37,7 @@ export function MarketplacesSection({ marketplaces, onChange }: { marketplaces: 
       setShowForm(false);
       onChange();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No pudimos agregar el marketplace.");
+      setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos agregar el marketplace.");
     } finally {
       setIsSaving(false);
     }

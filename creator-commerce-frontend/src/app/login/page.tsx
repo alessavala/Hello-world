@@ -7,6 +7,7 @@ import { Logo } from "@/components/logo";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import { ApiError } from "@/lib/api";
+import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
@@ -25,7 +26,7 @@ export default function LoginPage() {
       await login(email, password);
       router.replace("/creators");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No pudimos iniciar sesión. Intentá de nuevo.");
+      setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos iniciar sesión. Intentá de nuevo.");
     } finally {
       setIsSubmitting(false);
     }
