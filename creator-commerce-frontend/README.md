@@ -4,15 +4,19 @@ Frontend web (Next.js 16, App Router, TypeScript, Tailwind v4) para el marketpla
 
 ## Estado actual
 
+- Landing pública (`/`, sin login) con CTA a registro de marca o creador; usuarios ya logueados son redirigidos automáticamente a `/creators`.
 - Auth: registro/login con selector de rol (Creador/Marca), sesión persistida en `localStorage`.
-- Discovery de creadores: búsqueda por nombre, chips de filtro (verificados, marketplace), panel de filtro por categoría, grilla de tarjetas, paginación.
-- Perfil de creador (`/creators/:id`, solo lectura): passport (score, campañas completadas, on-time, rating, rehire, first-approval, disputas), marketplaces con estado de verificación, redes sociales, portafolio de videos.
+- Discovery de creadores: búsqueda por nombre, chips de filtro (verificados, marketplace), panel de filtro por categoría, grilla de tarjetas, paginación, botón de favorito (♥) para marcas.
+- Perfil de creador (`/creators/:id`): passport (score, campañas completadas, on-time, rating, rehire, first-approval, disputas), marketplaces con estado de verificación, redes sociales, portafolio con **embeds oficiales de TikTok/Instagram** (blockquote + `embed.js`, sin alojar contenido propio), reseñas recibidas con promedio, botón de favorito para marcas.
 - Mi perfil (`/profile`, editable, según el rol logueado):
-  - Creador: datos básicos, redes sociales (alta/baja), marketplaces (alta/baja, verificación la hace un admin), categorías/nichos (toggle).
+  - Creador: datos básicos, redes sociales (alta/baja), marketplaces (alta/baja, verificación la hace un admin), categorías/nichos (toggle), portafolio (alta/baja de links a TikTok/Instagram/YouTube/Facebook).
   - Marca: datos básicos del negocio.
 - Campañas (`/campaigns`, según el rol logueado):
   - Marca: lista de sus campañas con estado, wizard de 2 pasos para crear (marketplace/categoría → nombre/descripción/compensación/requisitos), publicar/pausar/reanudar/cerrar.
-  - Creador: campañas publicadas por cualquier marca, postularse con un click (deshabilitado si ya se postuló).
+  - Creador: campañas publicadas por cualquier marca (con nombre e insignia de verificación de la marca), postularse con un click (deshabilitado si ya se postuló).
+- Colaboraciones (`/collaborations`): estado de cada colaboración aceptada, con acción de "Dejar reseña" (bidireccional: marca y creador) al llegar a `COMPLETED`.
+- Favoritos (`/favorites`, solo marcas): lista de creadores guardados, con opción de quitar.
+- Panel de administración (`/admin`, solo rol ADMIN): dashboard con contadores, tablas de usuarios/creadores/marcas/campañas/colaboraciones/disputas, acciones de verificar creador/marca y suspender usuario.
 
 Estilo visual inspirado en las referencias que compartiste (fondo cálido, badge tipo píldora para el logo, acentos ámbar, chips redondeados) — el wordmark usa un placeholder (`creator.hub`), reemplazalo por tu marca real en `src/components/logo.tsx`.
 
@@ -43,22 +47,35 @@ Abrí [http://localhost:3000](http://localhost:3000). Necesitás el backend corr
 ```
 src/
   app/
-    login/, register/     pantallas de auth
-    creators/              discovery + [id] detalle de creador
-    campaigns/              dispatch por rol: marca gestiona, creador se postula
-    profile/                mi perfil (dispatch por rol: creador vs marca)
-    layout.tsx             fonts, AuthProvider, estilos globales
-  components/               Logo, Button, Chip, Input, Select, AppShell, CreatorCard,
-                             CampaignCard, CampaignWizard, BrandProfileForm, CreatorProfileForm
-    creator-profile/         BasicInfoForm, SocialAccountsSection, MarketplacesSection, CategoriesSection
+    page.tsx                landing pública (sin login) o redirect a /creators
+    login/, register/       pantallas de auth
+    creators/                discovery + [id] detalle de creador (passport, portafolio, reseñas)
+    campaigns/                dispatch por rol: marca gestiona, creador se postula
+    collaborations/           estado + acción de reseña bidireccional
+    favorites/                creadores guardados (solo marcas)
+    admin/                    panel de administración (solo rol ADMIN)
+    profile/                  mi perfil (dispatch por rol: creador vs marca)
+    layout.tsx               fonts, AuthProvider, estilos globales
+  components/                 Logo, Button, Chip, Input, Select, AppShell, CreatorCard,
+                               CampaignCard, CampaignWizard, BrandProfileForm, CreatorProfileForm,
+                               SocialEmbed, ReviewForm
+    creator-profile/           BasicInfoForm, SocialAccountsSection, MarketplacesSection,
+                               CategoriesSection, PortfolioSection
   lib/
-    api.ts                  wrapper fetch tipado + manejo de errores del backend
-    auth-context.tsx        estado de sesión (React Context + localStorage)
-    types.ts                tipos espejo de los DTOs/respuestas del backend
+    api.ts                    wrapper fetch tipado + manejo de errores del backend
+    auth-context.tsx          estado de sesión (React Context + localStorage)
+    use-favorites.ts           hook de favoritos (ids + toggle optimista con rollback en error)
+    types.ts                  tipos espejo de los DTOs/respuestas del backend
 ```
 
 ## Notas técnicas
 
 - **Client-rendered, no Server Components para datos de la API**: dado que el backend es un servicio externo separado (no una base de datos co-ubicada), las pantallas que consumen la API son Client Components que hacen `fetch` directo desde el navegador con el JWT en el header `Authorization`. Esto evita duplicar lógica de auth en una capa BFF que no aporta nada en este caso.
 - **`react-hooks/set-state-in-effect`**: este proyecto usa la config de lint más reciente de Next (basada en las reglas de React Compiler), que marca como error el patrón común "fetch en un efecto y actualizar loading state". Es un patrón válido para fetch-on-mount/fetch-on-param-change sin Suspense; donde aparece, está silenciado línea por línea con un comentario explicando por qué.
-- Quedan por construir: invitaciones (marca invita directo a un creador), colaboraciones, entregables, reviews, chat (ya hay backend y WebSocket listos), portafolio del creador (el backend ya soporta CRUD, falta la UI), y el panel admin.
+- **Embeds de portafolio sin alojar contenido**: `SocialEmbed` carga el `embed.js` oficial de TikTok/Instagram una sola vez y renderiza un `<blockquote>` que cada script hidrata con el contenido real desde el CDN de la plataforma - el creador solo pega el link, nunca sube ni aloja el video.
+- **`useFavoriteIds`**: actualización optimista (el ♥ cambia al instante) con rollback automático si el POST/DELETE falla - por ejemplo, si la marca todavía no completó su perfil, el corazón vuelve a su estado anterior y se muestra el error traducido.
+- Quedan por construir: entregables (subida/revisión desde el frontend - el backend ya soporta el flujo), chat (backend y WebSocket listos, falta la pantalla), y verificación de marketplaces individual desde el panel admin (el backend expone el endpoint, la UI hoy solo cubre verificación de creador/marca).
+
+## Deploy a producción
+
+Ver [`../DEPLOYMENT.md`](../DEPLOYMENT.md) en la raíz del repo para la guía de deploy con Docker + Caddy en un VPS.

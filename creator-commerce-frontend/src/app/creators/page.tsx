@@ -8,6 +8,7 @@ import { Button } from "@/components/button";
 import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
+import { useFavoriteIds } from "@/lib/use-favorites";
 import type { Category, CreatorProfile, Marketplace, Paginated, VerificationLevel } from "@/lib/types";
 
 const MARKETPLACE_OPTIONS: { value: Marketplace; label: string; icon: string }[] = [
@@ -26,6 +27,7 @@ export default function CreatorsPage() {
 
 function CreatorsDiscovery() {
   const { token } = useAuth();
+  const favorites = useFavoriteIds();
 
   const [search, setSearch] = useState("");
   const [marketplace, setMarketplace] = useState<Marketplace | undefined>();
@@ -142,6 +144,7 @@ function CreatorsDiscovery() {
       )}
 
       {error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      {favorites.error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{favorites.error}</p>}
 
       {isLoading ? (
         <p className="py-16 text-center text-sm text-muted">Cargando creadores…</p>
@@ -153,7 +156,14 @@ function CreatorsDiscovery() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {result?.data.map((creator) => <CreatorCard key={creator.id} creator={creator} />)}
+            {result?.data.map((creator) => (
+              <CreatorCard
+                key={creator.id}
+                creator={creator}
+                isFavorited={favorites.enabled ? favorites.isFavorited(creator.id) : undefined}
+                onToggleFavorite={favorites.enabled ? () => favorites.toggle(creator.id) : undefined}
+              />
+            ))}
           </div>
 
           {result && result.meta.totalPages > 1 && (

@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { ActivityLogModule } from './common/activity-log.module';
 import { ReputationModule } from './common/reputation.module';
+import { MailModule } from './common/mail.module';
 import { AuthModule } from './auth/auth.module';
 import { CreatorsModule } from './creators/creators.module';
 import { BrandsModule } from './brands/brands.module';
@@ -18,6 +19,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { ChatModule } from './chat/chat.module';
 import { AdminModule } from './admin/admin.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { AdminModule } from './admin/admin.module';
     PrismaModule,
     ActivityLogModule,
     ReputationModule,
+    MailModule,
     AuthModule,
     CreatorsModule,
     BrandsModule,
@@ -39,6 +42,7 @@ import { AdminModule } from './admin/admin.module';
     DisputesModule,
     ChatModule,
     AdminModule,
+    FavoritesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

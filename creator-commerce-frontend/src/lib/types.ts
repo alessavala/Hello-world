@@ -163,6 +163,92 @@ export interface CampaignApplication {
   campaign?: Campaign;
 }
 
+export interface Review {
+  id: string;
+  collaborationId: string;
+  reviewerUserId: string;
+  reviewedUserId: string;
+  rating: number;
+  communication: number;
+  quality: number;
+  punctuality: number;
+  comments: string | null;
+  wouldWorkAgain: boolean | null;
+  createdAt: string;
+  reviewer?: { id: string; email: string; role: UserRole };
+}
+
+export interface ReviewsResponse extends Paginated<Review> {
+  avgRating: number;
+}
+
+export interface Collaboration {
+  id: string;
+  campaignId: string;
+  creatorId: string;
+  applicationId: string;
+  status: CollaborationStatus;
+  acceptedAt: string;
+  deadlineAt: string;
+  completedAt: string | null;
+  campaign?: Campaign;
+  creator?: CreatorProfile;
+  reviews?: Review[];
+}
+
+export type CollaborationStatus =
+  | "ACCEPTED"
+  | "SAMPLE_PENDING"
+  | "SAMPLE_SENT"
+  | "SAMPLE_RECEIVED"
+  | "CONTENT_IN_PROGRESS"
+  | "DRAFT_SUBMITTED"
+  | "CHANGES_REQUESTED"
+  | "FINAL_SUBMITTED"
+  | "APPROVED"
+  | "PUBLISHED"
+  | "COMPLETED"
+  | "DISPUTED"
+  | "CANCELLED";
+
+export interface AdminDashboard {
+  users: number;
+  creators: number;
+  brands: number;
+  campaigns: number;
+  activeCollaborations: number;
+  openDisputes: number;
+}
+
+export type UserStatus = "ACTIVE" | "SUSPENDED" | "PENDING_VERIFICATION";
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  createdAt: string;
+}
+
+export interface AdminCreator extends CreatorProfile {
+  user: { email: string; status: UserStatus };
+}
+
+export interface AdminBrand extends BrandProfile {
+  user: { email: string; status: UserStatus };
+}
+
+export type DisputeStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+
+export interface AdminDispute {
+  id: string;
+  collaborationId: string;
+  reason: string;
+  description: string;
+  status: DisputeStatus;
+  createdAt: string;
+}
+
 export interface CreatorSearchParams {
   page?: number;
   pageSize?: number;

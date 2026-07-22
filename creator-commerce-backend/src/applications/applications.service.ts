@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { ApplicationSource, CampaignApplication } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../common/activity-log.service';
+import { MailService } from '../common/mail.service';
 import { computeMatchScore } from '../common/matching';
 import { paginate, paginationArgs } from '../common/pagination';
 import { ApplicationListDto, ApplyDto, InviteCreatorDto } from './applications.dto';
@@ -17,13 +18,14 @@ export class ApplicationsService {
   constructor(
     private prisma: PrismaService,
     private activityLog: ActivityLogService,
+    private mail: MailService,
   ) {}
 
   async apply(userId: string, campaignId: string, d: ApplyDto) {
     const creator = await this.prisma.creatorProfile.findUnique({ where: { userId }, include: APPLICANT_INCLUDE });
     if (!creator) throw new NotFoundException('Create your creator profile first');
 
-    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId } });
+    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, include: { brand: true } });
     if (!campaign || campaign.status !== 'PUBLISHED') throw new BadRequestException('Campaign is unavailable');
     if (campaign.applicationDeadline && campaign.applicationDeadline < new Date()) {
       throw new BadRequestException('Application deadline has passed');
@@ -34,6 +36,11 @@ export class ApplicationsService {
       data: { campaignId, creatorId: creator.id, proposedRate: d.proposedRate, message: d.message, matchScore: total, source: ApplicationSource.APPLICATION },
     });
     await this.activityLog.log({ userId, entityType: 'CampaignApplication', entityId: application.id, action: 'APPLICATION_SUBMITTED' });
+    await this.mail.notifyUser(
+      campaign.brand.userId,
+      'Nueva aplicación a tu campaña',
+      `<p><strong>${creator.displayName}</strong> aplicó a tu campaña "${campaign.name}".</p>`,
+    );
     return application;
   }
 
@@ -62,6 +69,11 @@ export class ApplicationsService {
       },
     });
     await this.activityLog.log({ userId, entityType: 'CampaignApplication', entityId: invitation.id, action: 'INVITATION_SENT' });
+    await this.mail.notifyUser(
+      creator.userId,
+      'Te invitaron a una campaña',
+      `<p><strong>${brand.businessName}</strong> te invitó a participar en la campaña "${campaign.name}".</p>`,
+    );
     return invitation;
   }
 
@@ -107,24 +119,55 @@ export class ApplicationsService {
     if (app.source !== ApplicationSource.APPLICATION) throw new BadRequestException('Invitations are accepted or rejected by the creator, not the brand');
     this.assertBrandTransition(app.status, status);
 
-    if (status === 'ACCEPTED') return this.acceptIntoCollaboration(app);
+    if (status === 'ACCEPTED') {
+      const collaboration = await this.acceptIntoCollaboration(app);
+      await this.mail.notifyUser(
+        app.creator.userId,
+        '¡Tu aplicación fue aceptada!',
+        `<p>Te aceptaron para la campaña "${app.campaign.name}". Coordinen los siguientes pasos por el chat de la plataforma.</p>`,
+      );
+      return collaboration;
+    }
 
     const updated = await this.prisma.campaignApplication.update({ where: { id }, data: { status } });
     await this.activityLog.log({ userId, entityType: 'CampaignApplication', entityId: id, action: `APPLICATION_${status}` });
+    if (status === 'REJECTED') {
+      await this.mail.notifyUser(
+        app.creator.userId,
+        'Actualización de tu aplicación',
+        `<p>Tu aplicación a la campaña "${app.campaign.name}" no fue seleccionada esta vez.</p>`,
+      );
+    }
     return updated;
   }
 
   async respond(userId: string, id: string, accept: boolean) {
-    const app = await this.prisma.campaignApplication.findUnique({ where: { id }, include: { campaign: true, creator: true } });
+    const app = await this.prisma.campaignApplication.findUnique({
+      where: { id },
+      include: { campaign: { include: { brand: true } }, creator: true },
+    });
     if (!app) throw new NotFoundException();
     if (app.creator.userId !== userId) throw new ForbiddenException();
     if (app.source !== ApplicationSource.INVITATION) throw new BadRequestException('Only invitations can be accepted or rejected this way');
     if (app.status !== 'INVITED') throw new BadRequestException(`Invitation already ${app.status.toLowerCase()}`);
 
-    if (accept) return this.acceptIntoCollaboration(app);
+    if (accept) {
+      const collaboration = await this.acceptIntoCollaboration(app);
+      await this.mail.notifyUser(
+        app.campaign.brand.userId,
+        `${app.creator.displayName} aceptó tu invitación`,
+        `<p><strong>${app.creator.displayName}</strong> aceptó tu invitación a la campaña "${app.campaign.name}".</p>`,
+      );
+      return collaboration;
+    }
 
     const updated = await this.prisma.campaignApplication.update({ where: { id }, data: { status: 'REJECTED' } });
     await this.activityLog.log({ userId, entityType: 'CampaignApplication', entityId: id, action: 'INVITATION_REJECTED' });
+    await this.mail.notifyUser(
+      app.campaign.brand.userId,
+      `${app.creator.displayName} rechazó tu invitación`,
+      `<p><strong>${app.creator.displayName}</strong> rechazó tu invitación a la campaña "${app.campaign.name}".</p>`,
+    );
     return updated;
   }
 

@@ -46,6 +46,17 @@ export function CampaignCard({ campaign, actions }: { campaign: Campaign; action
         </span>
       </div>
 
+      {campaign.brand && (
+        <p className="mb-2 flex items-center gap-1.5 text-sm text-muted">
+          {campaign.brand.businessName}
+          {campaign.brand.verificationStatus && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-accent-olive/15 px-2 py-0.5 text-xs font-semibold text-accent-olive">
+              ⭐ Verificada
+            </span>
+          )}
+        </p>
+      )}
+
       <p className="mb-3 line-clamp-2 text-sm text-muted">{campaign.description}</p>
 
       <div className="mb-3 flex flex-wrap gap-1.5 text-xs">

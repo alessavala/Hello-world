@@ -5,6 +5,7 @@ import { BasicInfoForm } from "./creator-profile/basic-info-form";
 import { SocialAccountsSection } from "./creator-profile/social-accounts-section";
 import { MarketplacesSection } from "./creator-profile/marketplaces-section";
 import { CategoriesSection } from "./creator-profile/categories-section";
+import { PortfolioSection } from "./creator-profile/portfolio-section";
 import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
@@ -52,6 +53,7 @@ export function CreatorProfileForm() {
           <SocialAccountsSection accounts={creator.socialAccounts} onChange={refresh} />
           <MarketplacesSection marketplaces={creator.marketplaces} onChange={refresh} />
           <CategoriesSection selected={creator.categories} onChange={refresh} />
+          <PortfolioSection items={creator.portfolioItems ?? []} onChange={refresh} />
         </>
       )}
     </div>

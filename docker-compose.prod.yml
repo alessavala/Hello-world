@@ -29,6 +29,12 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       PORT: "4000"
       CORS_ORIGIN: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Creator Commerce <no-reply@localhost>}
 
   frontend:
     build:

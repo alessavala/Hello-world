@@ -28,7 +28,7 @@ export class CollaborationsService {
   list(userId: string) {
     return this.prisma.collaboration.findMany({
       where: { OR: [{ creator: { userId } }, { campaign: { brand: { userId } } }] },
-      include: { campaign: { include: { brand: true, category: true } }, creator: true, deliverables: true },
+      include: { campaign: { include: { brand: true, category: true } }, creator: true, deliverables: true, reviews: true },
       orderBy: { acceptedAt: 'desc' },
     });
   }

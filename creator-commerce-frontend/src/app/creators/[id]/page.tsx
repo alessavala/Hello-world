@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { SocialEmbed } from "@/components/social-embed";
 import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
-import type { CreatorPassport, CreatorProfile } from "@/lib/types";
+import { useFavoriteIds } from "@/lib/use-favorites";
+import type { CreatorPassport, CreatorProfile, ReviewsResponse } from "@/lib/types";
 
 const MARKETPLACE_LABEL: Record<string, string> = {
   AMAZON: "Amazon",
@@ -42,9 +44,11 @@ function CreatorDetail() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { token } = useAuth();
+  const favorites = useFavoriteIds();
 
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [passport, setPassport] = useState<CreatorPassport | null>(null);
+  const [reviews, setReviews] = useState<ReviewsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -62,6 +66,9 @@ function CreatorDetail() {
       .then(([creatorRes, passportRes]) => {
         setCreator(creatorRes);
         setPassport(passportRes);
+        apiFetch<ReviewsResponse>(`/reviews/user/${creatorRes.userId}`, { token, query: { pageSize: 10 } })
+          .then(setReviews)
+          .catch(() => {});
       })
       .catch((err) => setError(err instanceof ApiError ? translateApiError(err.message) : "No pudimos cargar este perfil."))
       .finally(() => setIsLoading(false));
@@ -75,6 +82,8 @@ function CreatorDetail() {
       <button type="button" onClick={() => router.back()} className="w-fit text-sm text-muted hover:text-foreground">
         ← Volver
       </button>
+
+      {favorites.error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{favorites.error}</p>}
 
       <div className="flex flex-col gap-4 rounded-3xl border border-border bg-surface p-6 shadow-sm sm:flex-row sm:items-center">
         <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-brand-pill">
@@ -95,6 +104,19 @@ function CreatorDetail() {
           <p className="text-sm text-muted">{[creator.city, creator.country].filter(Boolean).join(", ")}</p>
           {creator.bio && <p className="mt-2 text-sm">{creator.bio}</p>}
         </div>
+        {favorites.enabled && (
+          <button
+            type="button"
+            onClick={() => favorites.toggle(creator.id)}
+            className={`inline-flex items-center gap-2 self-start rounded-full border px-4 py-2 text-sm font-semibold transition ${
+              favorites.isFavorited(creator.id)
+                ? "border-accent-pink bg-accent-pink text-accent-pink-foreground"
+                : "border-border bg-surface hover:bg-brand-pill/60"
+            }`}
+          >
+            {favorites.isFavorited(creator.id) ? "♥ Guardado" : "♡ Guardar"}
+          </button>
+        )}
       </div>
 
       {creator.categories.length > 0 && (
@@ -164,25 +186,32 @@ function CreatorDetail() {
 
       {creator.portfolioItems && creator.portfolioItems.length > 0 && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold">Videos</h2>
+          <h2 className="mb-3 text-lg font-semibold">Portfolio</h2>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {creator.portfolioItems.map((item) => (
-              <a
-                key={item.id}
-                href={item.contentUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="relative aspect-[9/16] w-40 shrink-0 overflow-hidden rounded-2xl bg-brand-pill"
-              >
-                {item.thumbnailUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-3xl">▶️</div>
-                )}
-              </a>
+              <SocialEmbed key={item.id} item={item} />
             ))}
           </div>
+        </div>
+      )}
+
+      {reviews && reviews.data.length > 0 && (
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+            Reseñas
+            <span className="text-sm font-normal text-muted">★ {reviews.avgRating.toFixed(1)} ({reviews.meta.total})</span>
+          </h2>
+          <ul className="flex flex-col gap-3">
+            {reviews.data.map((r) => (
+              <li key={r.id} className="rounded-2xl border border-border bg-surface p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                  <span className="text-xs text-muted">{new Date(r.createdAt).toLocaleDateString("es-MX")}</span>
+                </div>
+                {r.comments && <p className="mt-1 text-sm">{r.comments}</p>}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

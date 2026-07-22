@@ -10,9 +10,10 @@ No incluye (fuera de alcance del MVP, ver "Próxima fase" al final): Shopify, si
 
 Monolito modular en NestJS que implementa el flujo completo de un marketplace de creator commerce:
 
-- **CREATOR**: perfil, redes sociales, afiliaciones a marketplaces, portafolio, categorías/nichos, búsqueda y postulación a campañas, invitaciones, colaboraciones, entregables, reviews, reputación (Creator Passport), chat directo con marcas.
-- **BRAND**: perfil, productos, campañas, descubrimiento de creadores, invitaciones, revisión de postulaciones, gestión de colaboraciones, entregables, reviews, chat directo con creadores.
+- **CREATOR**: perfil, redes sociales, afiliaciones a marketplaces, portafolio (links a TikTok/Instagram, sin alojar contenido propio), categorías/nichos, búsqueda y postulación a campañas, invitaciones, colaboraciones, entregables, reviews bidireccionales, reputación (Creator Passport), chat directo con marcas.
+- **BRAND**: perfil, productos, campañas, descubrimiento de creadores, creadores favoritos (shortlist personal), invitaciones, revisión de postulaciones, gestión de colaboraciones, entregables, reviews bidireccionales, chat directo con creadores.
 - **ADMIN**: dashboard, gestión de usuarios, verificación de creadores/marcas/marketplaces, mediación de disputas, auditoría de actividad.
+- **Notificaciones por email**: aplicaciones/invitaciones nuevas, cambios de estado, reviews recibidas y cambios de verificación disparan un correo (vía `MailService`); sin `SMTP_HOST` configurado, se loguean en vez de enviarse, así que el resto de la app funciona igual sin un proveedor de email configurado.
 
 ## 2. Arquitectura
 
@@ -27,6 +28,7 @@ src/
     activity-log.service.ts   auditoría (fire-and-forget, no rompe la operación de negocio)
     reputation.service.ts     cálculo derivado del Creator Passport / Reliability Score
     matching.ts            motor de matching basado en reglas (sin ML)
+    mail.service.ts         notificaciones por email (opcional, SMTP configurable, no-op si no hay SMTP_HOST)
   prisma/            PrismaService/PrismaModule (@Global)
   auth/              registro, login, JWT
   creators/          perfil, redes sociales, marketplaces, categorías, portafolio, discovery, passport
@@ -40,6 +42,7 @@ src/
   reviews/           calificaciones bidireccionales
   disputes/          apertura y mediación de disputas
   chat/              mensajería 1:1 marca <-> creador (REST + WebSocket en tiempo real)
+  favorites/         marcas guardan creadores para contactar más adelante
   admin/             panel administrativo
 ```
 
@@ -76,6 +79,11 @@ npm install
 | `JWT_EXPIRES_IN` | Expiración del access token | `7d` |
 | `PORT` | Puerto HTTP | `4000` |
 | `CORS_ORIGIN` | Orígenes permitidos, separados por coma | `http://localhost:3000` |
+| `SMTP_HOST` | Servidor SMTP para notificaciones por email (opcional - sin esto, las notificaciones se loguean en vez de enviarse) | `smtp.sendgrid.net` |
+| `SMTP_PORT` | Puerto SMTP | `587` |
+| `SMTP_SECURE` | `true` para TLS implícito (puerto 465) | `false` |
+| `SMTP_USER` / `SMTP_PASS` | Credenciales SMTP | - |
+| `SMTP_FROM` | Remitente de los correos | `Creator Commerce <no-reply@tudominio.com>` |
 
 ## 6. Docker
 
@@ -95,7 +103,7 @@ createdb creator_commerce
 
 ## 8. Prisma
 
-El schema completo está en `prisma/schema.prisma`: 19 modelos (`User`, `CreatorProfile`, `BrandProfile`, `SocialAccount`, `CreatorMarketplace`, `Category`, `CreatorCategory`, `PortfolioItem`, `Product`, `Campaign`, `CampaignApplication`, `Collaboration`, `Deliverable`, `DeliverableReview`, `Review`, `Dispute`, `ActivityLog`, `Conversation`, `Message`), con índices compuestos para las consultas de discovery/listing más frecuentes, `onDelete: Cascade` donde la relación es de propiedad exclusiva, y unique constraints que hacen imposible a nivel de base de datos: doble aplicación a la misma campaña, doble colaboración para la misma aplicación, doble review del mismo usuario a la misma colaboración, doble red social del mismo tipo/usuario.
+El schema completo está en `prisma/schema.prisma`: 20 modelos (`User`, `CreatorProfile`, `BrandProfile`, `SocialAccount`, `CreatorMarketplace`, `Category`, `CreatorCategory`, `PortfolioItem`, `Favorite`, `Product`, `Campaign`, `CampaignApplication`, `Collaboration`, `Deliverable`, `DeliverableReview`, `Review`, `Dispute`, `ActivityLog`, `Conversation`, `Message`), con índices compuestos para las consultas de discovery/listing más frecuentes, `onDelete: Cascade` donde la relación es de propiedad exclusiva, y unique constraints que hacen imposible a nivel de base de datos: doble aplicación a la misma campaña, doble colaboración para la misma aplicación, doble review del mismo usuario a la misma colaboración, doble red social del mismo tipo/usuario.
 
 ```bash
 npx prisma generate      # regenerar el cliente tras cambios de schema
@@ -161,9 +169,9 @@ cp .env.test.example .env.test
 DATABASE_URL="postgresql://creator:creator@localhost:5432/creator_commerce_test?schema=public" npx prisma migrate deploy
 ```
 
-`test/app.e2e-spec.ts` cubre: registro/login, rechazo de registro duplicado y de auto-registro como ADMIN, guard de roles, mass-assignment protection (un cliente no puede setear `reliabilityScore`), ownership cruzado entre marcas (producto y campaña de otra marca), ciclo de vida de campaña con transiciones inválidas rechazadas, aplicación duplicada rechazada (409), aceptación de aplicación creando una única colaboración (sin duplicados aunque se acepte dos veces), transición ilegal de colaboración rechazada, flujo completo de entregables hasta `COMPLETED`, reviews (incluida la duplicada rechazada) y verificación de que el Creator Passport se recalcula con datos reales, el flujo completo de invitación (crear, aceptar/rechazar), y chat: inicio de conversación idempotente, ownership (un extraño no puede leer/escribir/unirse a la sala), entrega de mensaje en tiempo real vía WebSocket con `socket.io-client` real (no mockeado), y recibo de lectura broadcast al otro lado.
+`test/app.e2e-spec.ts` cubre: registro/login, rechazo de registro duplicado y de auto-registro como ADMIN, guard de roles, mass-assignment protection (un cliente no puede setear `reliabilityScore`), ownership cruzado entre marcas (producto y campaña de otra marca), ciclo de vida de campaña con transiciones inválidas rechazadas, aplicación duplicada rechazada (409), aceptación de aplicación creando una única colaboración (sin duplicados aunque se acepte dos veces), transición ilegal de colaboración rechazada, flujo completo de entregables hasta `COMPLETED`, reviews (incluida la duplicada rechazada) y verificación de que el Creator Passport se recalcula con datos reales, el flujo completo de invitación (crear, aceptar/rechazar), chat (inicio de conversación idempotente, ownership, entrega de mensaje en tiempo real vía WebSocket con `socket.io-client` real, recibo de lectura broadcast), panel de admin (dashboard, verificación de creador/marca, guard de rol), favoritos (agregar/idempotencia/listar/quitar, guard de rol) y el endpoint público de reviews por usuario.
 
-Estado actual: 18 unit tests + 44 e2e tests, todos pasando.
+Estado actual: 18 unit tests + 55 e2e tests, todos pasando.
 
 ## 14. Swagger
 
@@ -240,6 +248,12 @@ PATCH  /deliverables/:id/review
 PATCH  /deliverables/:id/publish
 
 POST   /reviews
+GET    /reviews/user/:userId           (público, con avgRating)
+
+GET    /favorites                      (marca: creadores guardados, paginado)
+GET    /favorites/ids                  (marca: ids guardados, para marcar el ♥ en discovery)
+POST   /favorites/:creatorId
+DELETE /favorites/:creatorId
 
 POST   /disputes
 GET    /disputes/me

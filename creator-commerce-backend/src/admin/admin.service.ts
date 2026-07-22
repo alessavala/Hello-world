@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UserStatus, VerificationLevel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../common/activity-log.service';
+import { MailService } from '../common/mail.service';
 import { paginate, paginationArgs, PaginationDto } from '../common/pagination';
 import { AdminCollaborationListDto, AdminDisputeListDto } from './admin.dto';
 
@@ -10,6 +11,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private activityLog: ActivityLogService,
+    private mail: MailService,
   ) {}
 
   async dashboard() {
@@ -100,6 +102,7 @@ export class AdminService {
   async verifyCreator(adminUserId: string, id: string, level: VerificationLevel) {
     const updated = await this.prisma.creatorProfile.update({ where: { id }, data: { verificationLevel: level } });
     await this.activityLog.log({ userId: adminUserId, entityType: 'CreatorProfile', entityId: id, action: 'CREATOR_VERIFIED', metadata: { level } });
+    await this.mail.notifyUser(updated.userId, 'Tu nivel de verificación cambió', `<p>Tu perfil ahora tiene el nivel de verificación <strong>${level}</strong>.</p>`);
     return updated;
   }
 
@@ -117,6 +120,9 @@ export class AdminService {
   async verifyBrand(adminUserId: string, id: string, verified: boolean) {
     const updated = await this.prisma.brandProfile.update({ where: { id }, data: { verificationStatus: verified } });
     await this.activityLog.log({ userId: adminUserId, entityType: 'BrandProfile', entityId: id, action: verified ? 'BRAND_VERIFIED' : 'BRAND_UNVERIFIED' });
+    if (verified) {
+      await this.mail.notifyUser(updated.userId, 'Tu marca fue verificada', '<p>Tu perfil de marca ahora tiene la insignia de verificado.</p>');
+    }
     return updated;
   }
 

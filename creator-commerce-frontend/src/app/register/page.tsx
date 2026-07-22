@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
@@ -12,9 +12,18 @@ import { useAuth } from "@/lib/auth-context";
 import type { UserRole } from "@/lib/types";
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const { register } = useAuth();
   const router = useRouter();
-  const [role, setRole] = useState<UserRole>("CREATOR");
+  const searchParams = useSearchParams();
+  const [role, setRole] = useState<UserRole>(() => (searchParams.get("role") === "BRAND" ? "BRAND" : "CREATOR"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

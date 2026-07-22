@@ -10,7 +10,13 @@ function initials(name: string) {
     .join("");
 }
 
-export function CreatorCard({ creator }: { creator: CreatorProfile }) {
+interface CreatorCardProps {
+  creator: CreatorProfile;
+  isFavorited?: boolean;
+  onToggleFavorite?: () => void;
+}
+
+export function CreatorCard({ creator, isFavorited, onToggleFavorite }: CreatorCardProps) {
   const topFollowers = creator.socialAccounts.reduce((max, s) => Math.max(max, s.followers), 0);
   const isVerified = creator.verificationLevel !== "REGISTERED";
 
@@ -35,7 +41,23 @@ export function CreatorCard({ creator }: { creator: CreatorProfile }) {
           </span>
         )}
 
-        <span className="absolute right-3 top-3 inline-flex items-center rounded-full bg-foreground/85 px-3 py-1 text-xs font-semibold text-background">
+        {onToggleFavorite && (
+          <button
+            type="button"
+            aria-label={isFavorited ? "Quitar de favoritos" : "Guardar en favoritos"}
+            onClick={(e) => {
+              e.preventDefault();
+              onToggleFavorite();
+            }}
+            className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm shadow-sm transition ${
+              isFavorited ? "bg-accent-pink text-accent-pink-foreground" : "bg-foreground/85 text-background hover:bg-accent-pink"
+            }`}
+          >
+            {isFavorited ? "♥" : "♡"}
+          </button>
+        )}
+
+        <span className="absolute bottom-3 right-3 inline-flex items-center rounded-full bg-foreground/85 px-3 py-1 text-xs font-semibold text-background">
           {Math.round(creator.reliabilityScore)} pts
         </span>
       </div>

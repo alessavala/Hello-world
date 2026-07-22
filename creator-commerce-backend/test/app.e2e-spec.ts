@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
+import * as bcrypt from 'bcryptjs';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/http-exception.filter';
@@ -380,6 +381,86 @@ describe('Creator Commerce API (e2e)', () => {
         .send({ accept: false })
         .expect(200);
       expect(respondRes.body.status).toBe('REJECTED');
+    });
+  });
+
+  describe('admin, favorites & reviews', () => {
+    let adminToken: string;
+    const adminEmail = `e2e-admin-${unique}@test.com`;
+
+    beforeAll(async () => {
+      const passwordHash = await bcrypt.hash(password, 12);
+      await prisma.user.create({ data: { email: adminEmail, passwordHash, role: 'ADMIN' } });
+      const res = await request(server).post('/api/v1/auth/login').send({ email: adminEmail, password }).expect(201);
+      adminToken = res.body.accessToken;
+    });
+
+    it('rejects a non-admin calling an admin endpoint', async () => {
+      await request(server).get('/api/v1/admin/dashboard').set('Authorization', `Bearer ${brandToken}`).expect(403);
+    });
+
+    it('returns dashboard counts for an admin', async () => {
+      const res = await request(server).get('/api/v1/admin/dashboard').set('Authorization', `Bearer ${adminToken}`).expect(200);
+      expect(res.body.users).toBeGreaterThan(0);
+    });
+
+    it('lets an admin verify a creator', async () => {
+      const res = await request(server)
+        .patch(`/api/v1/admin/creators/${creatorProfileId}/verify`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ level: 'IDENTITY' })
+        .expect(200);
+      expect(res.body.verificationLevel).toBe('IDENTITY');
+    });
+
+    it('lets an admin verify a brand', async () => {
+      const brandProfile = await prisma.brandProfile.findFirst({ where: { user: { email: brandEmail } } });
+      const res = await request(server)
+        .patch(`/api/v1/admin/brands/${brandProfile!.id}/verify`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ verified: true })
+        .expect(200);
+      expect(res.body.verificationStatus).toBe(true);
+    });
+
+    it('lists reviews received by a user, with an average rating', async () => {
+      const creatorUser = await prisma.user.findUnique({ where: { email: creatorEmail } });
+      const res = await request(server).get(`/api/v1/reviews/user/${creatorUser!.id}`).expect(200);
+      expect(res.body.avgRating).toBe(5);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    });
+
+    describe('favorites', () => {
+      it('rejects a creator calling favorites (brand-only)', async () => {
+        await request(server).post(`/api/v1/favorites/${creatorProfileId}`).set('Authorization', `Bearer ${creatorToken}`).expect(403);
+      });
+
+      it('lets a brand favorite a creator', async () => {
+        await request(server).post(`/api/v1/favorites/${creatorProfileId}`).set('Authorization', `Bearer ${brandToken}`).expect(201);
+      });
+
+      it('is idempotent - favoriting twice does not duplicate', async () => {
+        await request(server).post(`/api/v1/favorites/${creatorProfileId}`).set('Authorization', `Bearer ${brandToken}`).expect(201);
+        const brand = await prisma.brandProfile.findFirst({ where: { user: { email: brandEmail } } });
+        const count = await prisma.favorite.count({ where: { brandId: brand!.id, creatorId: creatorProfileId } });
+        expect(count).toBe(1);
+      });
+
+      it('lists favorited creators for the brand', async () => {
+        const res = await request(server).get('/api/v1/favorites').set('Authorization', `Bearer ${brandToken}`).expect(200);
+        expect(res.body.data.some((c: any) => c.id === creatorProfileId)).toBe(true);
+      });
+
+      it('returns favorited creator ids', async () => {
+        const res = await request(server).get('/api/v1/favorites/ids').set('Authorization', `Bearer ${brandToken}`).expect(200);
+        expect(res.body).toContain(creatorProfileId);
+      });
+
+      it('removes a favorite', async () => {
+        await request(server).delete(`/api/v1/favorites/${creatorProfileId}`).set('Authorization', `Bearer ${brandToken}`).expect(200);
+        const res = await request(server).get('/api/v1/favorites/ids').set('Authorization', `Bearer ${brandToken}`).expect(200);
+        expect(res.body).not.toContain(creatorProfileId);
+      });
     });
   });
 
