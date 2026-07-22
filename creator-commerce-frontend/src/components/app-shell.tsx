@@ -14,6 +14,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 const NAV_LINKS = [
   { href: "/creators", label: "Creadores" },
+  { href: "/campaigns", label: "Campañas" },
   { href: "/profile", label: "Mi perfil" },
 ];
 

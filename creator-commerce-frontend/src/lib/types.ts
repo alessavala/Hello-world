@@ -116,6 +116,53 @@ export interface BrandProfile {
   verificationStatus: boolean;
 }
 
+export type CompensationType = "PRODUCT_ONLY" | "FIXED_FEE" | "EXTERNAL_COMMISSION" | "HYBRID";
+export type CampaignStatus = "DRAFT" | "PUBLISHED" | "PAUSED" | "CLOSED" | "CANCELLED";
+
+export interface Product {
+  id: string;
+  name: string;
+  marketplace: Marketplace;
+  productUrl: string;
+  imageUrl: string | null;
+}
+
+export interface Campaign {
+  id: string;
+  brandId: string;
+  productId: string | null;
+  categoryId: string;
+  name: string;
+  description: string;
+  marketplace: Marketplace;
+  compensationType: CompensationType;
+  fixedAmount: string | null;
+  creatorsRequired: number;
+  deliverableDescription: string;
+  applicationDeadline: string | null;
+  deliveryDays: number;
+  minFollowers: number;
+  minAverageViews: number;
+  targetCountry: string | null;
+  status: CampaignStatus;
+  createdAt: string;
+  brand?: BrandProfile;
+  product?: Product | null;
+  category?: Category;
+}
+
+export type ApplicationStatus = "APPLIED" | "INVITED" | "SHORTLISTED" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
+
+export interface CampaignApplication {
+  id: string;
+  campaignId: string;
+  creatorId: string;
+  source: "APPLICATION" | "INVITATION";
+  matchScore: number;
+  status: ApplicationStatus;
+  campaign?: Campaign;
+}
+
 export interface CreatorSearchParams {
   page?: number;
   pageSize?: number;

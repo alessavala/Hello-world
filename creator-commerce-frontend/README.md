@@ -10,6 +10,9 @@ Frontend web (Next.js 16, App Router, TypeScript, Tailwind v4) para el marketpla
 - Mi perfil (`/profile`, editable, según el rol logueado):
   - Creador: datos básicos, redes sociales (alta/baja), marketplaces (alta/baja, verificación la hace un admin), categorías/nichos (toggle).
   - Marca: datos básicos del negocio.
+- Campañas (`/campaigns`, según el rol logueado):
+  - Marca: lista de sus campañas con estado, wizard de 2 pasos para crear (marketplace/categoría → nombre/descripción/compensación/requisitos), publicar/pausar/reanudar/cerrar.
+  - Creador: campañas publicadas por cualquier marca, postularse con un click (deshabilitado si ya se postuló).
 
 Estilo visual inspirado en las referencias que compartiste (fondo cálido, badge tipo píldora para el logo, acentos ámbar, chips redondeados) — el wordmark usa un placeholder (`creator.hub`), reemplazalo por tu marca real en `src/components/logo.tsx`.
 
@@ -42,10 +45,11 @@ src/
   app/
     login/, register/     pantallas de auth
     creators/              discovery + [id] detalle de creador
+    campaigns/              dispatch por rol: marca gestiona, creador se postula
     profile/                mi perfil (dispatch por rol: creador vs marca)
     layout.tsx             fonts, AuthProvider, estilos globales
   components/               Logo, Button, Chip, Input, Select, AppShell, CreatorCard,
-                             BrandProfileForm, CreatorProfileForm
+                             CampaignCard, CampaignWizard, BrandProfileForm, CreatorProfileForm
     creator-profile/         BasicInfoForm, SocialAccountsSection, MarketplacesSection, CategoriesSection
   lib/
     api.ts                  wrapper fetch tipado + manejo de errores del backend
@@ -57,4 +61,4 @@ src/
 
 - **Client-rendered, no Server Components para datos de la API**: dado que el backend es un servicio externo separado (no una base de datos co-ubicada), las pantallas que consumen la API son Client Components que hacen `fetch` directo desde el navegador con el JWT en el header `Authorization`. Esto evita duplicar lógica de auth en una capa BFF que no aporta nada en este caso.
 - **`react-hooks/set-state-in-effect`**: este proyecto usa la config de lint más reciente de Next (basada en las reglas de React Compiler), que marca como error el patrón común "fetch en un efecto y actualizar loading state". Es un patrón válido para fetch-on-mount/fetch-on-param-change sin Suspense; donde aparece, está silenciado línea por línea con un comentario explicando por qué.
-- Quedan por construir: campañas, aplicaciones/invitaciones, colaboraciones, entregables, reviews, chat (ya hay backend y WebSocket listos), portafolio del creador (el backend ya soporta CRUD, falta la UI), y el panel admin.
+- Quedan por construir: invitaciones (marca invita directo a un creador), colaboraciones, entregables, reviews, chat (ya hay backend y WebSocket listos), portafolio del creador (el backend ya soporta CRUD, falta la UI), y el panel admin.
