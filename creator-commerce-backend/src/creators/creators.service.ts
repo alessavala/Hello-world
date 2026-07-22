@@ -63,6 +63,7 @@ export class CreatorsService {
     const { page, pageSize, skip, take } = paginationArgs(q);
 
     const where: Prisma.CreatorProfileWhereInput = {
+      displayName: q.q ? { contains: q.q, mode: 'insensitive' } : undefined,
       country: q.country,
       city: q.city,
       categories: q.category ? { some: { category: { slug: q.category } } } : undefined,

@@ -26,6 +26,7 @@ export class UpsertCreatorDto {
 }
 
 export class CreatorSearchDto extends PaginationDto {
+  @IsOptional() @IsString() q?: string;
   @IsOptional() @IsString() country?: string;
   @IsOptional() @IsString() city?: string;
   @IsOptional() @IsString() category?: string;
