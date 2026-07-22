@@ -105,6 +105,17 @@ export interface CreatorPassport {
   verificationLevel: VerificationLevel;
 }
 
+export interface BrandProfile {
+  id: string;
+  userId: string;
+  businessName: string;
+  website: string | null;
+  logoUrl: string | null;
+  country: string;
+  description: string | null;
+  verificationStatus: boolean;
+}
+
 export interface CreatorSearchParams {
   page?: number;
   pageSize?: number;
