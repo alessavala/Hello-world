@@ -1,10 +1,30 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import {
+  Users,
+  Megaphone,
+  Handshake,
+  UserCircle,
+  Heart,
+  ShieldCheck,
+  LogOut,
+  Menu,
+  Moon,
+  Sun,
+  type LucideIcon,
+} from "lucide-react";
 import { Logo } from "./logo";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Button } from "./ui/button";
+import { Drawer, DrawerContent, DrawerTrigger } from "./ui/drawer";
+import { Separator } from "./ui/separator";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import type { UserRole } from "@/lib/types";
 
 const ROLE_LABEL: Record<string, string> = {
   CREATOR: "Creador",
@@ -12,17 +32,77 @@ const ROLE_LABEL: Record<string, string> = {
   ADMIN: "Admin",
 };
 
-const BASE_NAV_LINKS = [
-  { href: "/creators", label: "Creadores" },
-  { href: "/campaigns", label: "Campañas" },
-  { href: "/collaborations", label: "Colaboraciones" },
-  { href: "/profile", label: "Mi perfil" },
+interface NavLink {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+const BASE_NAV_LINKS: NavLink[] = [
+  { href: "/creators", label: "Creadores", icon: Users },
+  { href: "/campaigns", label: "Campañas", icon: Megaphone },
+  { href: "/collaborations", label: "Colaboraciones", icon: Handshake },
+  { href: "/profile", label: "Mi perfil", icon: UserCircle },
 ];
+
+function navLinksFor(role: UserRole): NavLink[] {
+  return [
+    ...BASE_NAV_LINKS,
+    ...(role === "BRAND" ? [{ href: "/favorites", label: "Favoritos", icon: Heart }] : []),
+    ...(role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: ShieldCheck }] : []),
+  ];
+}
+
+function initials(email: string) {
+  return email.slice(0, 2).toUpperCase();
+}
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      aria-label="Cambiar tema"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+    >
+      <Sun className="hidden dark:block" />
+      <Moon className="block dark:hidden" />
+    </Button>
+  );
+}
+
+function NavList({ links, pathname, onNavigate }: { links: NavLink[]; pathname: string; onNavigate?: () => void }) {
+  return (
+    <nav className="flex flex-col gap-1">
+      {links.map((link) => {
+        const Icon = link.icon;
+        const active = pathname === link.href;
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              active ? "bg-primary/10 text-primary" : "text-muted hover:bg-sidebar-accent hover:text-foreground",
+            )}
+          >
+            <Icon className="size-4 shrink-0" />
+            {link.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) router.replace("/login");
@@ -32,61 +112,73 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <div className="flex flex-1 items-center justify-center text-sm text-muted">Cargando…</div>;
   }
 
-  const navLinks = [
-    ...BASE_NAV_LINKS,
-    ...(user.role === "BRAND" ? [{ href: "/favorites", label: "Favoritos" }] : []),
-    ...(user.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
-  ];
+  function handleLogout() {
+    logout();
+    router.replace("/login");
+  }
+
+  const navLinks = navLinksFor(user.role);
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/90 px-4 py-3 backdrop-blur sm:px-6">
-        <div className="flex items-center gap-6">
+    <div className="flex min-h-full flex-1 bg-background">
+      {/* Sidebar - fixed, desktop only */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-4 py-5 md:flex">
+        <div className="px-2">
           <Logo />
-          <nav className="hidden items-center gap-1 sm:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  pathname === link.href ? "bg-brand-pill text-foreground" : "text-muted hover:text-foreground"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-muted sm:inline">
-            {user.email} · {ROLE_LABEL[user.role] ?? user.role}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              logout();
-              router.replace("/login");
-            }}
-            className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm font-medium hover:bg-brand-pill/60"
-          >
+        <Separator className="my-5" />
+        <NavList links={navLinks} pathname={pathname} />
+        <div className="mt-auto flex flex-col gap-3 px-2">
+          <Separator />
+          <div className="flex items-center gap-2.5">
+            <Avatar className="size-9">
+              <AvatarFallback>{initials(user.email)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{user.email}</p>
+              <p className="text-xs text-muted">{ROLE_LABEL[user.role] ?? user.role}</p>
+            </div>
+          </div>
+          <Button variant="secondary" size="sm" className="justify-start rounded-lg" onClick={handleLogout}>
+            <LogOut />
             Cerrar sesión
-          </button>
+          </Button>
         </div>
-      </header>
-      <nav className="flex items-center gap-1 border-b border-border px-4 py-2 sm:hidden">
-        {navLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-              pathname === link.href ? "bg-brand-pill text-foreground" : "text-muted hover:text-foreground"
-            }`}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-      <main className="flex flex-1 flex-col px-4 py-6 sm:px-6">{children}</main>
+      </aside>
+
+      <div className="flex min-h-screen flex-1 flex-col">
+        {/* Header */}
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background/90 px-4 py-3 backdrop-blur sm:px-6">
+          <div className="flex items-center gap-3 md:hidden">
+            <Drawer open={mobileOpen} onOpenChange={setMobileOpen} direction="left">
+              <DrawerTrigger asChild>
+                <Button type="button" variant="ghost" size="icon" aria-label="Abrir menú">
+                  <Menu />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="left-0 right-auto max-w-72 border-l-0 border-r border-border">
+                <div className="mb-5 px-2">
+                  <Logo />
+                </div>
+                <NavList links={navLinks} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+                <div className="mt-6 flex flex-col gap-3 px-2">
+                  <Separator />
+                  <p className="truncate text-sm text-muted">{user.email}</p>
+                  <Button variant="secondary" size="sm" className="justify-start rounded-lg" onClick={handleLogout}>
+                    <LogOut />
+                    Cerrar sesión
+                  </Button>
+                </div>
+              </DrawerContent>
+            </Drawer>
+            <Logo />
+          </div>
+          <div className="hidden md:block" />
+          <ThemeToggle />
+        </header>
+
+        <main className="flex flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+      </div>
     </div>
   );
 }
