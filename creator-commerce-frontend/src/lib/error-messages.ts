@@ -64,6 +64,15 @@ const EXACT_MESSAGES: Record<string, string> = {
   'Missing token': 'Tu sesión no es válida. Iniciá sesión de nuevo.',
   'Resource not found': 'Recurso no encontrado.',
   'Referenced resource does not exist': 'El recurso relacionado no existe.',
+  'role is required (CREATOR or BRAND) to create a new account':
+    'Elegí si sos creador o marca para crear tu cuenta. Volvé a "Crear cuenta" y probá de nuevo.',
+  'Social login with Google is not configured': 'El inicio de sesión con Google todavía no está disponible.',
+  'Social login with Facebook is not configured': 'El inicio de sesión con Facebook todavía no está disponible.',
+  'Google token did not include an email': 'Tu cuenta de Google no tiene un email asociado.',
+  'Google account email is not verified': 'Tu email de Google no está verificado.',
+  'Invalid Facebook token': 'No pudimos validar tu sesión de Facebook. Probá de nuevo.',
+  'Your Facebook account has no email, or email permission was not granted':
+    'Tu cuenta de Facebook no tiene email, o no diste permiso para compartirlo.',
 };
 
 const PATTERN_MESSAGES: Array<[RegExp, string]> = [

@@ -17,6 +17,8 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
   register: (email: string, password: string, role: UserRole) => Promise<AuthUser>;
+  loginWithGoogle: (idToken: string, role?: UserRole) => Promise<AuthUser>;
+  loginWithFacebook: (accessToken: string, role?: UserRole) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -64,13 +66,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res.user;
   }
 
+  async function loginWithGoogle(idToken: string, role?: UserRole) {
+    const res = await apiFetch<LoginResponse>("/auth/google", { method: "POST", body: { idToken, role } });
+    persist({ token: res.accessToken, user: res.user });
+    return res.user;
+  }
+
+  async function loginWithFacebook(accessToken: string, role?: UserRole) {
+    const res = await apiFetch<LoginResponse>("/auth/facebook", { method: "POST", body: { accessToken, role } });
+    persist({ token: res.accessToken, user: res.user });
+    return res.user;
+  }
+
   function logout() {
     localStorage.removeItem(STORAGE_KEY);
     setToken(null);
     setUser(null);
   }
 
-  return <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, loginWithGoogle, loginWithFacebook, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

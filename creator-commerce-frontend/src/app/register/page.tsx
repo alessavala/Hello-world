@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
 import { ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
@@ -103,6 +104,14 @@ function RegisterForm() {
               {isSubmitting ? "Creando cuenta…" : "Crear cuenta"}
             </Button>
           </form>
+
+          <div className="mt-6">
+            <SocialLoginButtons
+              role={role}
+              onSuccess={() => router.replace("/creators")}
+              onError={(msg) => setError(msg)}
+            />
+          </div>
         </div>
 
         <p className="mt-6 text-center text-sm text-muted">

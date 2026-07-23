@@ -107,7 +107,10 @@ enum MessageStatus {
 model User {
   id               String                @id @default(cuid())
   email            String                @unique
-  passwordHash     String
+  // Null for accounts created via Google/Facebook that never set a password.
+  passwordHash     String?
+  googleId         String?               @unique
+  facebookId       String?               @unique
   role             UserRole
   status           UserStatus            @default(ACTIVE)
   createdAt        DateTime              @default(now())

@@ -14,6 +14,7 @@ Monolito modular en NestJS que implementa el flujo completo de un marketplace de
 - **BRAND**: perfil, productos, campañas, descubrimiento de creadores, creadores favoritos (shortlist personal), invitaciones, revisión de postulaciones, gestión de colaboraciones, entregables, reviews bidireccionales, chat directo con creadores.
 - **ADMIN**: dashboard, gestión de usuarios, verificación de creadores/marcas/marketplaces, mediación de disputas, auditoría de actividad.
 - **Notificaciones por email**: aplicaciones/invitaciones nuevas, cambios de estado, reviews recibidas y cambios de verificación disparan un correo (vía `MailService`); sin `SMTP_HOST` configurado, se loguean en vez de enviarse, así que el resto de la app funciona igual sin un proveedor de email configurado.
+- **Login social**: registro/login con Google (Google Identity Services) y Facebook (Facebook Login), además del login con email/contraseña. Un email existente se vincula automáticamente al provider social si coincide, en vez de crear una cuenta duplicada. Ver sección 5.1.
 
 ## 2. Arquitectura
 
@@ -84,6 +85,28 @@ npm install
 | `SMTP_SECURE` | `true` para TLS implícito (puerto 465) | `false` |
 | `SMTP_USER` / `SMTP_PASS` | Credenciales SMTP | - |
 | `SMTP_FROM` | Remitente de los correos | `Creator Commerce <no-reply@tudominio.com>` |
+| `GOOGLE_CLIENT_ID` | Client ID de OAuth de Google (opcional - sin esto, `POST /auth/google` responde 503) | `123456-abc.apps.googleusercontent.com` |
+| `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | Credenciales de la app de Facebook (opcional - sin esto, `POST /auth/facebook` responde 503) | - |
+
+## 5.1 Login social (Google / Facebook)
+
+El login social es opcional: sin estas variables configuradas, el frontend directamente no muestra los botones. Cuando lo quieras activar:
+
+**Google:**
+1. Andá a [Google Cloud Console](https://console.cloud.google.com/) → creá un proyecto (o usá uno existente).
+2. **APIs & Services → OAuth consent screen**: configurala como "External", completá nombre de la app y email de contacto.
+3. **APIs & Services → Credentials → Create Credentials → OAuth client ID**, tipo **Web application**.
+4. En **Authorized JavaScript origins** agregá el dominio del frontend (`http://localhost:3000` en dev, `https://tudominio.com` en producción). No hace falta configurar "Authorized redirect URIs" - el flujo que usamos (Google Identity Services) no redirige, entrega el token directo en el navegador.
+5. Copiá el **Client ID** generado → es el valor de `GOOGLE_CLIENT_ID` (backend) **y** de `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (frontend) - son el mismo valor, solo con nombres de variable distintos en cada lado.
+
+**Facebook:**
+1. Andá a [Meta for Developers](https://developers.facebook.com/) → **Mis apps → Crear app** (tipo "Consumidor" o "Ninguno" alcanza).
+2. Agregá el producto **Facebook Login**.
+3. En **Configuración → Básica**, copiá el **ID de la app** y el **Secreto de la app** → `FACEBOOK_APP_ID` y `FACEBOOK_APP_SECRET`. El App ID también va en `NEXT_PUBLIC_FACEBOOK_APP_ID` del frontend (mismo valor).
+4. En **Facebook Login → Configuración**, agregá el dominio del frontend en **Dominios de la app** (y el Site URL si te lo pide).
+5. El permiso `email` es estándar y no necesita pasar por App Review para empezar a probar con vos mismo/testers agregados en **Roles → Testers**. Para que cualquier usuario pueda entrar (no solo testers) hay que pasar por la revisión de la app en Meta antes de ir a producción.
+
+Con ambas variables del backend puestas y las `NEXT_PUBLIC_*` correspondientes en el frontend (ver su README), reiniciá ambos servicios y los botones van a aparecer solos en `/login` y `/register`.
 
 ## 6. Docker
 
@@ -158,7 +181,7 @@ docker run --env-file .env -p 4000:4000 creator-commerce-backend
 ## 13. Ejecutar tests
 
 ```bash
-npm test         # unit tests (máquinas de estado, motor de matching) - no requieren base de datos
+npm test         # unit tests (máquinas de estado, motor de matching, lógica de login social) - no requieren base de datos
 npm run test:e2e # tests de integración contra una base de datos real
 ```
 
@@ -171,7 +194,7 @@ DATABASE_URL="postgresql://creator:creator@localhost:5432/creator_commerce_test?
 
 `test/app.e2e-spec.ts` cubre: registro/login, rechazo de registro duplicado y de auto-registro como ADMIN, guard de roles, mass-assignment protection (un cliente no puede setear `reliabilityScore`), ownership cruzado entre marcas (producto y campaña de otra marca), ciclo de vida de campaña con transiciones inválidas rechazadas, aplicación duplicada rechazada (409), aceptación de aplicación creando una única colaboración (sin duplicados aunque se acepte dos veces), transición ilegal de colaboración rechazada, flujo completo de entregables hasta `COMPLETED`, reviews (incluida la duplicada rechazada) y verificación de que el Creator Passport se recalcula con datos reales, el flujo completo de invitación (crear, aceptar/rechazar), chat (inicio de conversación idempotente, ownership, entrega de mensaje en tiempo real vía WebSocket con `socket.io-client` real, recibo de lectura broadcast), panel de admin (dashboard, verificación de creador/marca, guard de rol), favoritos (agregar/idempotencia/listar/quitar, guard de rol) y el endpoint público de reviews por usuario.
 
-Estado actual: 18 unit tests + 55 e2e tests, todos pasando.
+Estado actual: 27 unit tests + 55 e2e tests, todos pasando.
 
 ## 14. Swagger
 
@@ -194,6 +217,8 @@ Todos bajo el prefijo `/api/v1`. Ver Swagger para el detalle completo de request
 ```
 POST   /auth/register
 POST   /auth/login
+POST   /auth/google                    (idToken de Google Identity Services)
+POST   /auth/facebook                  (accessToken del SDK de Facebook)
 GET    /auth/me
 
 PUT    /creators/me
