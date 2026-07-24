@@ -182,6 +182,19 @@ export interface ReviewsResponse extends Paginated<Review> {
   avgRating: number;
 }
 
+export type DeliverableStatus = "PENDING" | "SUBMITTED" | "CHANGES_REQUESTED" | "APPROVED" | "PUBLISHED";
+
+export interface Deliverable {
+  id: string;
+  collaborationId: string;
+  title: string;
+  contentType: string;
+  status: DeliverableStatus;
+  draftUrl: string | null;
+  finalUrl: string | null;
+  publicationUrl: string | null;
+}
+
 export interface Collaboration {
   id: string;
   campaignId: string;
@@ -194,6 +207,7 @@ export interface Collaboration {
   campaign?: Campaign;
   creator?: CreatorProfile;
   reviews?: Review[];
+  deliverables?: Deliverable[];
 }
 
 export type CollaborationStatus =

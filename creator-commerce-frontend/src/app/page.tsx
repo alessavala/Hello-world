@@ -3,8 +3,12 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, CheckCircle2, ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { Button } from "@/components/button";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
 
 const CREATOR_FEATURES = [
@@ -37,8 +41,8 @@ export default function Home() {
       <header className="flex items-center justify-between px-4 py-4 sm:px-8">
         <Logo />
         <div className="flex items-center gap-2">
-          <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:text-foreground">
-            Iniciar sesión
+          <Link href="/login">
+            <Button variant="ghost">Iniciar sesión</Button>
           </Link>
           <Link href="/register">
             <Button variant="secondary">Crear cuenta</Button>
@@ -46,10 +50,16 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="flex flex-col items-center px-4 py-16 text-center sm:py-24">
-        <span className="mb-4 inline-flex items-center rounded-full bg-accent-yellow/20 px-4 py-1.5 text-sm font-semibold text-accent-yellow-foreground">
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="flex flex-col items-center px-4 py-16 text-center sm:py-24"
+      >
+        <Badge variant="warning" className="mb-4 px-4 py-1.5">
+          <ShoppingBag className="size-3.5" />
           Amazon · Mercado Libre · TikTok Shop
-        </span>
+        </Badge>
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
           El marketplace donde marcas y creadores hacen match para vender más.
         </h1>
@@ -59,44 +69,50 @@ export default function Home() {
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link href="/register?role=CREATOR">
-            <Button className="w-full sm:w-auto">Soy creador de contenido</Button>
+            <Button size="lg" className="w-full sm:w-auto">
+              Soy creador de contenido
+              <ArrowRight />
+            </Button>
           </Link>
           <Link href="/register?role=BRAND">
-            <Button variant="secondary" className="w-full sm:w-auto">
+            <Button size="lg" variant="secondary" className="w-full sm:w-auto">
               Soy una marca
             </Button>
           </Link>
         </div>
-      </section>
+      </motion.section>
 
-      <section className="mx-auto grid w-full max-w-5xl gap-6 px-4 pb-20 sm:grid-cols-2 sm:px-8">
-        <div className="rounded-3xl border border-border bg-surface p-8 shadow-sm">
-          <span className="mb-3 inline-flex rounded-full bg-accent-pink/15 px-3 py-1 text-xs font-semibold text-accent-pink">
-            Para creadores
-          </span>
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+        className="mx-auto grid w-full max-w-5xl gap-6 px-4 pb-20 sm:grid-cols-2 sm:px-8"
+      >
+        <Card className="p-8">
+          <Badge className="mb-4">Para creadores</Badge>
           <ul className="flex flex-col gap-3 text-sm">
             {CREATOR_FEATURES.map((f) => (
-              <li key={f} className="flex gap-2">
-                <span className="text-accent-pink">●</span>
+              <li key={f} className="flex gap-2.5">
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" />
                 <span>{f}</span>
               </li>
             ))}
           </ul>
-        </div>
-        <div className="rounded-3xl border border-border bg-surface p-8 shadow-sm">
-          <span className="mb-3 inline-flex rounded-full bg-accent-olive/15 px-3 py-1 text-xs font-semibold text-accent-olive">
+        </Card>
+        <Card className="p-8">
+          <Badge variant="success" className="mb-4">
             Para marcas
-          </span>
+          </Badge>
           <ul className="flex flex-col gap-3 text-sm">
             {BRAND_FEATURES.map((f) => (
-              <li key={f} className="flex gap-2">
-                <span className="text-accent-olive">●</span>
+              <li key={f} className="flex gap-2.5">
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" />
                 <span>{f}</span>
               </li>
             ))}
           </ul>
-        </div>
-      </section>
+        </Card>
+      </motion.section>
 
       <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted sm:px-8">
         creator.hub · Marketplace P2P de marcas y creadores

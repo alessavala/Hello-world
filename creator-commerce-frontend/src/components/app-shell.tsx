@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
+  LayoutDashboard,
   Users,
   Megaphone,
   Handshake,
@@ -47,6 +48,7 @@ const BASE_NAV_LINKS: NavLink[] = [
 
 function navLinksFor(role: UserRole): NavLink[] {
   return [
+    ...(role !== "ADMIN" ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
     ...BASE_NAV_LINKS,
     ...(role === "BRAND" ? [{ href: "/favorites", label: "Favoritos", icon: Heart }] : []),
     ...(role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: ShieldCheck }] : []),

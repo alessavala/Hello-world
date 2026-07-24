@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Search, SlidersHorizontal, Star, UserX } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Chip } from "@/components/chip";
 import { CreatorCard } from "@/components/creator-card";
-import { Button } from "@/components/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
@@ -87,7 +92,7 @@ function CreatorsDiscovery() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Creadores</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Creadores</h1>
         <p className="text-sm text-muted">Buscá creadores por nombre, categoría o marketplace.</p>
       </div>
 
@@ -97,19 +102,19 @@ function CreatorsDiscovery() {
           setPage(1);
           load();
         }}
-        className="flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-1 shadow-sm"
+        className="relative"
       >
-        <span aria-hidden>🔍</span>
-        <input
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+        <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar creador por nombre…"
-          className="w-full bg-transparent py-2.5 text-sm outline-none placeholder:text-muted"
+          className="h-12 rounded-full pl-10"
         />
       </form>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Chip active={verifiedOnly} icon="⭐" onClick={() => updateFilter(() => setVerifiedOnly((v) => !v))}>
+        <Chip active={verifiedOnly} icon={<Star className="size-3.5" />} onClick={() => updateFilter(() => setVerifiedOnly((v) => !v))}>
           Verificados
         </Chip>
         {MARKETPLACE_OPTIONS.map((option) => (
@@ -122,13 +127,13 @@ function CreatorsDiscovery() {
             {option.label}
           </Chip>
         ))}
-        <Chip icon="➕" active={showFilters} onClick={() => setShowFilters((v) => !v)}>
+        <Chip icon={<SlidersHorizontal className="size-3.5" />} active={showFilters} onClick={() => setShowFilters((v) => !v)}>
           Filtrar
         </Chip>
       </div>
 
       {showFilters && (
-        <div className="rounded-3xl border border-border bg-surface p-4 shadow-sm">
+        <Card className="p-4">
           <p className="mb-2 text-sm font-medium">Categoría</p>
           <div className="flex flex-wrap gap-2">
             <Chip active={!categorySlug} onClick={() => updateFilter(() => setCategorySlug(undefined))}>
@@ -140,19 +145,28 @@ function CreatorsDiscovery() {
               </Chip>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
-      {error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
-      {favorites.error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{favorites.error}</p>}
+      {error && <p className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
+      {favorites.error && <p className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{favorites.error}</p>}
 
       {isLoading ? (
-        <p className="py-16 text-center text-sm text-muted">Cargando creadores…</p>
-      ) : result && result.data.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-3xl border border-dashed border-border py-16 text-center">
-          <p className="text-lg font-semibold">No encontramos creadores con esos filtros</p>
-          <p className="text-sm text-muted">Probá ajustando la búsqueda o quitando algún filtro.</p>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-3">
+              <Skeleton className="aspect-square w-full rounded-xl" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
         </div>
+      ) : result && result.data.length === 0 ? (
+        <EmptyState
+          icon={UserX}
+          title="No encontramos creadores con esos filtros"
+          description="Probá ajustando la búsqueda o quitando algún filtro."
+        />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -166,23 +180,7 @@ function CreatorsDiscovery() {
             ))}
           </div>
 
-          {result && result.meta.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                Anterior
-              </Button>
-              <span className="text-sm text-muted">
-                Página {result.meta.page} de {result.meta.totalPages}
-              </span>
-              <Button
-                variant="secondary"
-                disabled={page >= result.meta.totalPages}
-                onClick={() => setPage((p) => Math.min(result.meta.totalPages, p + 1))}
-              >
-                Siguiente
-              </Button>
-            </div>
-          )}
+          {result && <Pagination page={page} totalPages={result.meta.totalPages} onChange={setPage} />}
         </>
       )}
     </div>

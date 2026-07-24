@@ -2,8 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Camera,
+  CheckCircle2,
+  ExternalLink,
+  Heart,
+  MessageCircle,
+  Music2,
+  Play,
+  Star,
+  type LucideIcon,
+} from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { SocialEmbed } from "@/components/social-embed";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { useAuth } from "@/lib/auth-context";
@@ -23,12 +41,28 @@ const PLATFORM_LABEL: Record<string, string> = {
   FACEBOOK: "Facebook",
 };
 
+const PLATFORM_ICON: Record<string, LucideIcon> = {
+  TIKTOK: Music2,
+  INSTAGRAM: Camera,
+  YOUTUBE: Play,
+  FACEBOOK: MessageCircle,
+};
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-      <p className="text-xl font-semibold">{value}</p>
+    <Card className="p-4 text-center">
+      <p className="text-xl font-semibold text-foreground">{value}</p>
       <p className="text-xs text-muted">{label}</p>
-    </div>
+    </Card>
   );
 }
 
@@ -74,57 +108,68 @@ function CreatorDetail() {
       .finally(() => setIsLoading(false));
   }, [token, params.id]);
 
-  if (isLoading) return <p className="py-16 text-center text-sm text-muted">Cargando perfil…</p>;
-  if (error || !creator) return <p className="py-16 text-center text-sm text-rose-700">{error ?? "Creador no encontrado."}</p>;
+  if (isLoading) {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (error || !creator) {
+    return <p className="py-16 text-center text-sm text-destructive">{error ?? "Creador no encontrado."}</p>;
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-      <button type="button" onClick={() => router.back()} className="w-fit text-sm text-muted hover:text-foreground">
-        ← Volver
+      <button type="button" onClick={() => router.back()} className="flex w-fit items-center gap-1.5 text-sm text-muted hover:text-foreground">
+        <ArrowLeft className="size-4" />
+        Volver
       </button>
 
-      {favorites.error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{favorites.error}</p>}
+      {favorites.error && <p className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{favorites.error}</p>}
 
-      <div className="flex flex-col gap-4 rounded-3xl border border-border bg-surface p-6 shadow-sm sm:flex-row sm:items-center">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-brand-pill">
-          {creator.profilePhotoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={creator.profilePhotoUrl} alt={creator.displayName} className="h-full w-full object-cover" />
-          )}
-        </div>
+      <Card className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+        <Avatar className="size-24">
+          <AvatarImage src={creator.profilePhotoUrl ?? undefined} alt={creator.displayName} />
+          <AvatarFallback className="text-2xl">{initials(creator.displayName) || "?"}</AvatarFallback>
+        </Avatar>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold">{creator.displayName}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{creator.displayName}</h1>
             {passport?.identityVerified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent-olive px-3 py-1 text-xs font-semibold text-accent-olive-foreground">
-                ⭐ Verificado
-              </span>
+              <Badge variant="success">
+                <BadgeCheck className="size-3.5" />
+                Verificado
+              </Badge>
             )}
           </div>
           <p className="text-sm text-muted">{[creator.city, creator.country].filter(Boolean).join(", ")}</p>
-          {creator.bio && <p className="mt-2 text-sm">{creator.bio}</p>}
+          {creator.bio && <p className="mt-2 text-sm text-foreground">{creator.bio}</p>}
         </div>
         {favorites.enabled && (
-          <button
+          <Button
             type="button"
+            variant={favorites.isFavorited(creator.id) ? "default" : "secondary"}
+            className="self-start"
             onClick={() => favorites.toggle(creator.id)}
-            className={`inline-flex items-center gap-2 self-start rounded-full border px-4 py-2 text-sm font-semibold transition ${
-              favorites.isFavorited(creator.id)
-                ? "border-accent-pink bg-accent-pink text-accent-pink-foreground"
-                : "border-border bg-surface hover:bg-brand-pill/60"
-            }`}
           >
-            {favorites.isFavorited(creator.id) ? "♥ Guardado" : "♡ Guardar"}
-          </button>
+            <Heart className="size-4" fill={favorites.isFavorited(creator.id) ? "currentColor" : "none"} />
+            {favorites.isFavorited(creator.id) ? "Guardado" : "Guardar"}
+          </Button>
         )}
-      </div>
+      </Card>
 
       {creator.categories.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {creator.categories.map((c) => (
-            <span key={c.categoryId} className="rounded-full bg-brand-pill px-3 py-1 text-sm font-medium">
+            <Badge key={c.categoryId} variant="secondary">
               {c.category.name}
-            </span>
+            </Badge>
           ))}
         </div>
       )}
@@ -149,15 +194,11 @@ function CreatorDetail() {
           <h2 className="mb-3 text-lg font-semibold">Marketplaces</h2>
           <div className="flex flex-wrap gap-2">
             {creator.marketplaces.map((m) => (
-              <span
-                key={m.id}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium ${
-                  m.verified ? "border-accent-olive bg-accent-olive/10 text-accent-olive" : "border-border bg-surface text-muted"
-                }`}
-              >
+              <Badge key={m.id} variant={m.verified ? "success" : "outline"}>
+                {m.verified && <CheckCircle2 className="size-3.5" />}
                 {MARKETPLACE_LABEL[m.marketplace] ?? m.marketplace}
-                {m.verified ? " ✓" : " (sin verificar)"}
-              </span>
+                {!m.verified && " (sin verificar)"}
+              </Badge>
             ))}
           </div>
         </div>
@@ -167,19 +208,21 @@ function CreatorDetail() {
         <div>
           <h2 className="mb-3 text-lg font-semibold">Redes sociales</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {creator.socialAccounts.map((s) => (
-              <a
-                key={s.id}
-                href={s.profileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-2xl border border-border bg-surface p-3 hover:bg-brand-pill/40"
-              >
-                <p className="text-sm font-semibold">{PLATFORM_LABEL[s.platform] ?? s.platform}</p>
-                <p className="text-xs text-muted">@{s.username}</p>
-                <p className="mt-1 text-sm">{new Intl.NumberFormat("es-MX", { notation: "compact" }).format(s.followers)} seguidores</p>
-              </a>
-            ))}
+            {creator.socialAccounts.map((s) => {
+              const Icon = PLATFORM_ICON[s.platform] ?? ExternalLink;
+              return (
+                <a key={s.id} href={s.profileUrl} target="_blank" rel="noreferrer">
+                  <Card className="p-3 transition hover:bg-muted-surface/60">
+                    <p className="flex items-center gap-1.5 text-sm font-semibold">
+                      <Icon className="size-4 text-primary" />
+                      {PLATFORM_LABEL[s.platform] ?? s.platform}
+                    </p>
+                    <p className="text-xs text-muted">@{s.username}</p>
+                    <p className="mt-1 text-sm">{new Intl.NumberFormat("es-MX", { notation: "compact" }).format(s.followers)} seguidores</p>
+                  </Card>
+                </a>
+              );
+            })}
           </div>
         </div>
       )}
@@ -199,17 +242,24 @@ function CreatorDetail() {
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
             Reseñas
-            <span className="text-sm font-normal text-muted">★ {reviews.avgRating.toFixed(1)} ({reviews.meta.total})</span>
+            <span className="flex items-center gap-1 text-sm font-normal text-muted">
+              <Star className="size-3.5 fill-warning text-warning" />
+              {reviews.avgRating.toFixed(1)} ({reviews.meta.total})
+            </span>
           </h2>
           <ul className="flex flex-col gap-3">
             {reviews.data.map((r) => (
-              <li key={r.id} className="rounded-2xl border border-border bg-surface p-4">
+              <Card key={r.id} className="p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+                  <span className="flex items-center gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className={`size-3.5 ${i < r.rating ? "fill-warning text-warning" : "text-border"}`} />
+                    ))}
+                  </span>
                   <span className="text-xs text-muted">{new Date(r.createdAt).toLocaleDateString("es-MX")}</span>
                 </div>
-                {r.comments && <p className="mt-1 text-sm">{r.comments}</p>}
-              </li>
+                {r.comments && <p className="mt-1 text-sm text-foreground">{r.comments}</p>}
+              </Card>
             ))}
           </ul>
         </div>
