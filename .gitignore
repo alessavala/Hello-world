@@ -1,0 +1,9 @@
+node_modules/
+build/
+.cache/
+.env
+*.sqlite
+*.sqlite-journal
+prisma/dev.sqlite
+.DS_Store
+.shopify/

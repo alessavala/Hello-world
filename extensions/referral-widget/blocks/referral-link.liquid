@@ -1,0 +1,59 @@
+{% comment %}
+  Renders the logged-in customer's referral link. Add this block to the
+  customer account page (or any page) via the theme editor.
+{% endcomment %}
+{% if customer %}
+  <div
+    class="referral-widget"
+    data-referral-widget
+    data-customer-id="{{ customer.id }}"
+    data-proxy-path="/apps/referrals/link"
+  >
+    <p class="referral-widget__title">{{ block.settings.heading }}</p>
+    <p class="referral-widget__body">{{ block.settings.body }}</p>
+    <div class="referral-widget__link-row">
+      <input type="text" readonly class="referral-widget__input" data-referral-url value="" />
+      <button type="button" class="referral-widget__copy" data-referral-copy>
+        {{ block.settings.copy_button_label }}
+      </button>
+    </div>
+    <p class="referral-widget__status" data-referral-status hidden></p>
+  </div>
+
+  <script src="{{ 'referral-widget.js' | asset_url }}" defer="defer"></script>
+{% else %}
+  <p class="referral-widget__login-prompt">{{ block.settings.login_prompt }}</p>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Referral link",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Share and earn"
+    },
+    {
+      "type": "text",
+      "id": "body",
+      "label": "Description",
+      "default": "Share your link with friends. When they buy, you both get a discount."
+    },
+    {
+      "type": "text",
+      "id": "copy_button_label",
+      "label": "Copy button label",
+      "default": "Copy link"
+    },
+    {
+      "type": "text",
+      "id": "login_prompt",
+      "label": "Logged-out message",
+      "default": "Log in to get your referral link."
+    }
+  ]
+}
+{% endschema %}

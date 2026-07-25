@@ -1,0 +1,74 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Required by @shopify/shopify-app-session-storage-prisma to persist OAuth sessions.
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+}
+
+// One settings row per shop: how much the referrer and the referee earn, and whether the program is live.
+model ReferralSettings {
+  id                     String   @id @default(cuid())
+  shop                   String   @unique
+  isEnabled              Boolean  @default(true)
+  referrerRewardPercent  Int      @default(10)
+  refereeRewardPercent   Int      @default(10)
+  rewardDiscountDays     Int      @default(30)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+// One referral code per customer per shop. Doubles as the referee's welcome discount code.
+model ReferralCode {
+  id                String     @id @default(cuid())
+  shop              String
+  customerId        String
+  customerEmail     String?
+  code              String     @unique
+  discountId        String?
+  clicks            Int        @default(0)
+  createdAt         DateTime   @default(now())
+  referrals         Referral[]
+
+  @@unique([shop, customerId])
+  @@index([shop])
+}
+
+// One row per successful referred purchase, tracking the reward owed to the referrer.
+model Referral {
+  id                 String       @id @default(cuid())
+  shop               String
+  referralCodeId     String
+  referralCode       ReferralCode @relation(fields: [referralCodeId], references: [id])
+  refereeOrderId     String
+  refereeOrderName   String?
+  refereeEmail       String?
+  orderTotal         Float?
+  rewardDiscountCode String?
+  rewardStatus       String       @default("pending") // pending | issued | failed
+  createdAt          DateTime     @default(now())
+
+  @@unique([shop, refereeOrderId])
+  @@index([shop])
+  @@index([referralCodeId])
+}
