@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
-import { AuthUser, CurrentUser, Roles } from '../common/auth';
+import { AuthUser, CurrentUser, Public, Roles } from '../common/auth';
 import { CreatorsService } from './creators.service';
 import {
   CreateMarketplaceDto,
@@ -37,11 +37,13 @@ export class CreatorsController {
     return this.service.search(q);
   }
 
+  @Public()
   @Get(':id')
   one(@Param('id') id: string) {
     return this.service.findOne(id);
   }
 
+  @Public()
   @Get(':id/passport')
   passport(@Param('id') id: string) {
     return this.service.passport(id);

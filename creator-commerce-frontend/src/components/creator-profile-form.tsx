@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BasicInfoForm } from "./creator-profile/basic-info-form";
+import { PassportShareCard } from "./creator-profile/passport-share-card";
 import { SocialAccountsSection } from "./creator-profile/social-accounts-section";
 import { MarketplacesSection } from "./creator-profile/marketplaces-section";
 import { CategoriesSection } from "./creator-profile/categories-section";
@@ -50,6 +51,7 @@ export function CreatorProfileForm() {
 
       {creator && (
         <>
+          <PassportShareCard creatorId={creator.id} />
           <SocialAccountsSection accounts={creator.socialAccounts} onChange={refresh} />
           <MarketplacesSection marketplaces={creator.marketplaces} onChange={refresh} />
           <CategoriesSection selected={creator.categories} onChange={refresh} />
