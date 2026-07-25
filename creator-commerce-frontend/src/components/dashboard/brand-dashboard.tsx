@@ -67,10 +67,10 @@ export function BrandDashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Campañas activas" value={activeCampaigns} icon={Megaphone} />
-        <StatCard label="Colaboraciones activas" value={activeCollaborations} icon={Handshake} />
-        <StatCard label="Entregables por revisar" value={pendingReview} icon={FileClock} />
-        <StatCard label="Creadores favoritos" value={favoritesTotal ?? 0} icon={Heart} />
+        <StatCard label="Campañas activas" value={activeCampaigns} icon={Megaphone} tone="primary" />
+        <StatCard label="Colaboraciones activas" value={activeCollaborations} icon={Handshake} tone="indigo" />
+        <StatCard label="Entregables por revisar" value={pendingReview} icon={FileClock} tone="amber" />
+        <StatCard label="Creadores favoritos" value={favoritesTotal ?? 0} icon={Heart} tone="pink" />
       </div>
 
       <Card>

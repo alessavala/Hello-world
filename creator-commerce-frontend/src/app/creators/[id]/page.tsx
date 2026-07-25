@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
+import { paletteVariant } from "@/lib/badge-color";
 import { useAuth } from "@/lib/auth-context";
 import { useFavoriteIds } from "@/lib/use-favorites";
 import type { CreatorPassport, CreatorProfile, ReviewsResponse } from "@/lib/types";
@@ -167,7 +168,7 @@ function CreatorDetail() {
       {creator.categories.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {creator.categories.map((c) => (
-            <Badge key={c.categoryId} variant="secondary">
+            <Badge key={c.categoryId} variant={paletteVariant(c.category.name)}>
               {c.category.name}
             </Badge>
           ))}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BadgeCheck, Heart, Users } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
+import { paletteGradient, paletteVariant } from "@/lib/badge-color";
 import type { CreatorProfile } from "@/lib/types";
 
 function initials(name: string) {
@@ -31,7 +32,7 @@ export function CreatorCard({ creator, isFavorited, onToggleFavorite }: CreatorC
             // eslint-disable-next-line @next/next/no-img-element
             <img src={creator.profilePhotoUrl} alt={creator.displayName} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-4xl font-semibold text-muted">
+            <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br text-4xl font-semibold text-foreground/70 ${paletteGradient(creator.displayName)}`}>
               {initials(creator.displayName) || "?"}
             </div>
           )}
@@ -80,7 +81,7 @@ export function CreatorCard({ creator, isFavorited, onToggleFavorite }: CreatorC
           {creator.categories.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {creator.categories.slice(0, 3).map((c) => (
-                <Badge key={c.categoryId} variant="secondary">
+                <Badge key={c.categoryId} variant={paletteVariant(c.category.name)}>
                   {c.category.name}
                 </Badge>
               ))}

@@ -87,13 +87,14 @@ export function CreatorDashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Creator Score" value={passport ? `${Math.round(passport.creatorCommerceScore)}/100` : "—"} icon={Award} />
-        <StatCard label="Colaboraciones activas" value={activeCollaborations} icon={Handshake} />
-        <StatCard label="Invitaciones pendientes" value={pendingInvites ?? 0} icon={Mail} />
+        <StatCard label="Creator Score" value={passport ? `${Math.round(passport.creatorCommerceScore)}/100` : "—"} icon={Award} tone="primary" />
+        <StatCard label="Colaboraciones activas" value={activeCollaborations} icon={Handshake} tone="indigo" />
+        <StatCard label="Invitaciones pendientes" value={pendingInvites ?? 0} icon={Mail} tone="pink" />
         <StatCard
           label="Estimado (pago fijo)"
           value={estimatedEarnings > 0 ? new Intl.NumberFormat("es-MX", { style: "currency", currency: "USD" }).format(estimatedEarnings) : "—"}
           icon={Wallet}
+          tone="amber"
         />
       </div>
 

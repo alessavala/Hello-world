@@ -88,7 +88,9 @@ function NavList({ links, pathname, onNavigate }: { links: NavLink[]; pathname: 
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              active ? "bg-primary/10 text-primary" : "text-muted hover:bg-sidebar-accent hover:text-foreground",
+              active
+                ? "bg-gradient-to-r from-primary/15 to-accent/10 text-primary shadow-sm"
+                : "text-muted hover:bg-sidebar-accent hover:text-foreground",
             )}
           >
             <Icon className="size-4 shrink-0" />
