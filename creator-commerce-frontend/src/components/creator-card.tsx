@@ -3,6 +3,7 @@ import { BadgeCheck, Heart, Users } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { paletteGradient, paletteVariant } from "@/lib/badge-color";
+import { formatCurrency } from "@/lib/format";
 import type { CreatorProfile } from "@/lib/types";
 
 function initials(name: string) {
@@ -86,6 +87,10 @@ export function CreatorCard({ creator, isFavorited, onToggleFavorite }: CreatorC
                 </Badge>
               ))}
             </div>
+          )}
+
+          {creator.baseRate && (
+            <p className="mt-2 text-sm font-semibold text-primary">Desde {formatCurrency(Number(creator.baseRate))}</p>
           )}
         </div>
       </Card>

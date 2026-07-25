@@ -73,6 +73,7 @@ export interface CreatorProfile {
   city: string | null;
   profilePhotoUrl: string | null;
   turnaroundDays: number;
+  baseRate: string | null;
   acceptsProduct: boolean;
   acceptsFixedFee: boolean;
   acceptsCommission: boolean;

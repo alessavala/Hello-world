@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { paletteVariant } from "@/lib/badge-color";
+import { formatCurrency } from "@/lib/format";
 import { useAuth } from "@/lib/auth-context";
 import { useFavoriteIds } from "@/lib/use-favorites";
 import type { CreatorPassport, CreatorProfile, ReviewsResponse } from "@/lib/types";
@@ -150,6 +151,9 @@ function CreatorDetail() {
             )}
           </div>
           <p className="text-sm text-muted">{[creator.city, creator.country].filter(Boolean).join(", ")}</p>
+          {creator.baseRate && (
+            <p className="mt-1 text-sm font-semibold text-primary">Tarifa base: {formatCurrency(Number(creator.baseRate))}</p>
+          )}
           {creator.bio && <p className="mt-2 text-sm text-foreground">{creator.bio}</p>}
         </div>
         {favorites.enabled && (

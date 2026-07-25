@@ -15,6 +15,7 @@ interface FormState {
   city: string;
   profilePhotoUrl: string;
   turnaroundDays: string;
+  baseRate: string;
   acceptsProduct: boolean;
   acceptsFixedFee: boolean;
   acceptsCommission: boolean;
@@ -28,6 +29,7 @@ function toFormState(creator: CreatorProfile | null): FormState {
     city: creator?.city ?? "",
     profilePhotoUrl: creator?.profilePhotoUrl ?? "",
     turnaroundDays: String(creator?.turnaroundDays ?? 14),
+    baseRate: creator?.baseRate ? String(creator.baseRate) : "",
     acceptsProduct: creator?.acceptsProduct ?? true,
     acceptsFixedFee: creator?.acceptsFixedFee ?? true,
     acceptsCommission: creator?.acceptsCommission ?? true,
@@ -57,6 +59,7 @@ export function BasicInfoForm({ creator, onSaved }: { creator: CreatorProfile | 
           city: form.city || undefined,
           profilePhotoUrl: form.profilePhotoUrl || undefined,
           turnaroundDays: Number(form.turnaroundDays) || 14,
+          baseRate: form.baseRate ? Number(form.baseRate) : undefined,
           acceptsProduct: form.acceptsProduct,
           acceptsFixedFee: form.acceptsFixedFee,
           acceptsCommission: form.acceptsCommission,
@@ -95,15 +98,28 @@ export function BasicInfoForm({ creator, onSaved }: { creator: CreatorProfile | 
         <label className="mb-1.5 block text-sm font-medium">Foto de perfil (URL)</label>
         <Input type="url" value={form.profilePhotoUrl} onChange={(e) => setForm({ ...form, profilePhotoUrl: e.target.value })} placeholder="https://…" />
       </div>
-      <div>
-        <label className="mb-1.5 block text-sm font-medium">Días de entrega habituales</label>
-        <Input
-          type="number"
-          min={1}
-          value={form.turnaroundDays}
-          onChange={(e) => setForm({ ...form, turnaroundDays: e.target.value })}
-          className="max-w-32"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium">Días de entrega habituales</label>
+          <Input
+            type="number"
+            min={1}
+            value={form.turnaroundDays}
+            onChange={(e) => setForm({ ...form, turnaroundDays: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium">Tarifa base</label>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="Ej: 150"
+            value={form.baseRate}
+            onChange={(e) => setForm({ ...form, baseRate: e.target.value })}
+          />
+          <p className="mt-1 text-xs text-muted">Lo que cobrás por colaboración - las marcas lo ven en tu perfil.</p>
+        </div>
       </div>
 
       <div>

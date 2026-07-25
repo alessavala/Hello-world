@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
@@ -20,6 +21,7 @@ export class UpsertCreatorDto {
   @IsOptional() @IsString() city?: string;
   @IsOptional() @IsUrl() profilePhotoUrl?: string;
   @IsOptional() @IsInt() @Min(1) turnaroundDays?: number;
+  @IsOptional() @IsNumber() @Min(0) baseRate?: number;
   @IsOptional() @IsBoolean() acceptsProduct?: boolean;
   @IsOptional() @IsBoolean() acceptsFixedFee?: boolean;
   @IsOptional() @IsBoolean() acceptsCommission?: boolean;
