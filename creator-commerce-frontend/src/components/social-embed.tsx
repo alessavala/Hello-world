@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { PortfolioItem } from "@/lib/types";
+import { isYoutubeShort, tiktokVideoId, youtubeVideoId } from "@/lib/video-embed";
 
 // TikTok and Instagram both ship an official embed.js that hydrates
 // blockquote placeholders into a live preview pulled straight from their own
@@ -29,20 +30,9 @@ function loadEmbedScript(src: string) {
   document.body.appendChild(script);
 }
 
-function tiktokVideoId(url: string): string | undefined {
-  return url.match(/\/video\/(\d+)/)?.[1];
-}
-
-// Covers youtube.com/watch?v=, youtu.be/, youtube.com/shorts/ and
-// youtube.com/embed/ - whichever format a creator happens to paste.
-function youtubeVideoId(url: string): string | undefined {
-  return url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/)?.[1];
-}
-
-function isYoutubeShort(url: string): boolean {
-  return /youtube\.com\/shorts\//.test(url);
-}
-
+// Renders a live, mounted embed for one portfolio item - meant to be mounted
+// only while its playback modal is open (see portfolio-gallery.tsx), not
+// kept alive in a long scrolling list of iframes/widgets.
 export function SocialEmbed({ item }: { item: PortfolioItem }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scriptSrc = EMBED_SCRIPTS[item.platform];
@@ -53,12 +43,12 @@ export function SocialEmbed({ item }: { item: PortfolioItem }) {
 
   if (item.platform === "TIKTOK") {
     return (
-      <div ref={containerRef} className="w-[280px] shrink-0 overflow-hidden rounded-2xl">
+      <div ref={containerRef} className="w-full overflow-hidden rounded-2xl">
         <blockquote
           className="tiktok-embed"
           cite={item.contentUrl}
           data-video-id={tiktokVideoId(item.contentUrl) ?? ""}
-          style={{ maxWidth: 280, minWidth: 280 }}
+          style={{ maxWidth: "100%", minWidth: 280, margin: "0 auto" }}
         >
           <section>
             <a href={item.contentUrl} target="_blank" rel="noreferrer">
@@ -72,8 +62,8 @@ export function SocialEmbed({ item }: { item: PortfolioItem }) {
 
   if (item.platform === "INSTAGRAM") {
     return (
-      <div ref={containerRef} className="w-[280px] shrink-0 overflow-hidden rounded-2xl">
-        <blockquote className="instagram-media" data-instgrm-captioned data-instgrm-permalink={item.contentUrl} style={{ maxWidth: 280, minWidth: 280 }}>
+      <div ref={containerRef} className="w-full overflow-hidden rounded-2xl">
+        <blockquote className="instagram-media" data-instgrm-captioned data-instgrm-permalink={item.contentUrl} style={{ maxWidth: "100%", minWidth: 280, margin: "0 auto" }}>
           <a href={item.contentUrl} target="_blank" rel="noreferrer">
             {item.title}
           </a>
@@ -87,11 +77,12 @@ export function SocialEmbed({ item }: { item: PortfolioItem }) {
     if (videoId) {
       const short = isYoutubeShort(item.contentUrl);
       return (
-        <div className={`shrink-0 overflow-hidden rounded-2xl bg-black ${short ? "aspect-[9/16] w-40" : "aspect-video w-64"}`}>
+        <div className={`mx-auto overflow-hidden rounded-2xl bg-black ${short ? "aspect-[9/16] max-w-xs" : "aspect-video w-full"}`}>
           <iframe
             src={`https://www.youtube.com/embed/${videoId}`}
             title={item.title}
             className="h-full w-full"
+            referrerPolicy="strict-origin-when-cross-origin"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />

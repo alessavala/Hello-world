@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Award, BadgeCheck, CheckCircle2, ExternalLink, Radio, Star, Users } from "lucide-react";
-import { FaAmazon } from "react-icons/fa6";
-import { SiFacebook, SiInstagram, SiTiktok, SiYoutube } from "react-icons/si";
-import type { IconType } from "react-icons";
 import { PublicShell } from "@/components/tools/public-shell";
-import { SocialEmbed } from "@/components/social-embed";
+import { PortfolioGallery } from "@/components/portfolio-gallery";
+import { AnimatedCommerceBackground } from "@/components/passport/animated-commerce-background";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,42 +15,9 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { translateApiError } from "@/lib/error-messages";
 import { paletteVariant } from "@/lib/badge-color";
 import { formatCurrency } from "@/lib/format";
+import { MARKETPLACE_LABEL, MARKETPLACE_STYLE, MercadoLibreMark, PLATFORM_LABEL, PLATFORM_STYLE } from "@/lib/platform-style";
 import Link from "next/link";
 import type { CreatorMarketplace, CreatorPassport, CreatorProfile, ReviewsResponse } from "@/lib/types";
-
-const MARKETPLACE_LABEL: Record<string, string> = {
-  AMAZON: "Amazon",
-  MERCADO_LIBRE: "Mercado Libre",
-  TIKTOK_SHOP: "TikTok Shop",
-};
-
-// react-icons/simple-icons has no Mercado Libre mark, so it gets a lettermark
-// in its own brand colors instead of a generic store icon.
-function MercadoLibreMark({ className }: { className?: string }) {
-  return <span className={`font-black ${className ?? ""}`}>ML</span>;
-}
-
-// Real brand logos (react-icons, bundled as code - no hotlinked images) on a
-// tinted tile in each brand's own color, so marketplaces read at a glance.
-const MARKETPLACE_STYLE: Record<string, { icon: IconType | typeof MercadoLibreMark; bg: string; text: string }> = {
-  AMAZON: { icon: FaAmazon, bg: "bg-[#FF9900]/10", text: "text-[#FF9900]" },
-  MERCADO_LIBRE: { icon: MercadoLibreMark, bg: "bg-[#FFE600]/20", text: "text-[#2D3277]" },
-  TIKTOK_SHOP: { icon: SiTiktok, bg: "bg-foreground/10", text: "text-foreground" },
-};
-
-const PLATFORM_LABEL: Record<string, string> = {
-  TIKTOK: "TikTok",
-  INSTAGRAM: "Instagram",
-  YOUTUBE: "YouTube",
-  FACEBOOK: "Facebook",
-};
-
-const PLATFORM_STYLE: Record<string, { icon: IconType; bg: string; text: string }> = {
-  TIKTOK: { icon: SiTiktok, bg: "bg-foreground/10", text: "text-foreground" },
-  INSTAGRAM: { icon: SiInstagram, bg: "bg-[#E4405F]/10", text: "text-[#E4405F]" },
-  YOUTUBE: { icon: SiYoutube, bg: "bg-[#FF0000]/10", text: "text-[#FF0000]" },
-  FACEBOOK: { icon: SiFacebook, bg: "bg-[#1877F2]/10", text: "text-[#1877F2]" },
-};
 
 function initials(name: string) {
   return name
@@ -63,10 +28,14 @@ function initials(name: string) {
     .join("");
 }
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return <h2 className="mb-3 text-[21px] font-bold tracking-[-0.035em] sm:text-[24px]">{children}</h2>;
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="p-4 text-center transition hover:shadow-md">
-      <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+    <Card className="rounded-[20px] p-4 text-center transition hover:shadow-md">
+      <p className="text-[28px] font-bold tracking-[-0.035em] text-foreground sm:text-[32px]">{value}</p>
       <p className="text-xs text-muted">{label}</p>
     </Card>
   );
@@ -78,7 +47,7 @@ function MarketplaceCard({ marketplace }: { marketplace: CreatorMarketplace }) {
   const isTikTokShop = marketplace.marketplace === "TIKTOK_SHOP";
 
   return (
-    <Card className="flex flex-col gap-3 p-4 transition hover:shadow-md">
+    <Card className="flex flex-col gap-3 rounded-[20px] p-4 transition hover:shadow-md">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${style?.bg ?? "bg-muted-surface"}`}>
@@ -123,7 +92,7 @@ function MarketplaceCard({ marketplace }: { marketplace: CreatorMarketplace }) {
 
 export default function PublicPassportPage() {
   return (
-    <PublicShell>
+    <PublicShell mainClassName="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-9 px-4 py-8 sm:px-8">
       <PublicPassport />
     </PublicShell>
   );
@@ -170,12 +139,16 @@ function PublicPassport() {
     return <p className="py-16 text-center text-sm text-destructive">{error ?? "Creador no encontrado."}</p>;
   }
 
+  const specialty = creator.categories[0]?.category.name;
+
   return (
-    <div className="flex w-full flex-col gap-6">
-      <Card className="overflow-hidden p-0">
-        <div className="relative h-28 bg-gradient-to-r from-primary via-accent to-chart-5 sm:h-32">
+    <div className="flex w-full flex-col gap-9">
+      {/* 1-2. Hero: avatar, identidad, especialidad + CTA/Score */}
+      <Card className="relative overflow-hidden rounded-[24px] p-0">
+        <div className="relative h-36 bg-gradient-to-br from-passport-navy via-passport-navy-2 to-passport-navy sm:h-44">
+          <AnimatedCommerceBackground />
           {passport && (
-            <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 shadow-sm backdrop-blur">
+            <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 shadow-sm backdrop-blur">
               <Award className="size-4 text-primary" />
               <span className="text-sm font-bold text-foreground">{Math.round(passport.creatorCommerceScore)}/100</span>
               <span className="text-xs text-muted">Creator Score</span>
@@ -189,7 +162,7 @@ function PublicPassport() {
           </Avatar>
           <div className="flex-1 pt-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{creator.displayName}</h1>
+              <h1 className="text-[27px] font-[750] leading-tight tracking-[-0.035em] sm:text-[36px]">{creator.displayName}</h1>
               {passport?.identityVerified && (
                 <Badge variant="success">
                   <BadgeCheck className="size-3.5" />
@@ -197,63 +170,45 @@ function PublicPassport() {
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted">{[creator.city, creator.country].filter(Boolean).join(", ")}</p>
+            <p className="text-sm text-muted">
+              {specialty && <span className="font-medium text-foreground">{specialty}</span>}
+              {specialty && (creator.city || creator.country) && " · "}
+              {[creator.city, creator.country].filter(Boolean).join(", ")}
+            </p>
             {creator.baseRate && (
               <Badge variant="gradient" className="mt-2 px-3 py-1 text-sm">
                 Tarifa base: {formatCurrency(Number(creator.baseRate))}
               </Badge>
             )}
-            {creator.bio && <p className="mt-3 max-w-2xl text-sm text-foreground">{creator.bio}</p>}
+            {creator.bio && <p className="mt-3 max-w-2xl text-sm leading-[1.6] text-foreground">{creator.bio}</p>}
           </div>
+          <Link href="/register" className="sm:pb-1">
+            <Button size="lg" className="w-full sm:w-auto">
+              Colaborar con {creator.displayName.split(" ")[0]}
+            </Button>
+          </Link>
         </div>
       </Card>
 
-      {creator.categories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {creator.categories.map((c) => (
-            <Badge key={c.categoryId} variant={paletteVariant(c.category.name)}>
-              {c.category.name}
-            </Badge>
-          ))}
-        </div>
-      )}
-
-      {passport && (
+      {/* 3. Contenido UGC destacado - sección protagonista */}
+      {creator.portfolioItems && creator.portfolioItems.length > 0 && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold">Creator Passport</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Score" value={`${Math.round(passport.creatorCommerceScore)}/100`} />
-            <Stat label="Campañas completadas" value={String(passport.campaignsCompleted)} />
-            <Stat label="Entregas a tiempo" value={`${Math.round(passport.onTimeDeliveryRate * 100)}%`} />
-            <Stat label="Calificación promedio" value={passport.avgRating ? passport.avgRating.toFixed(1) : "—"} />
-            <Stat label="Volverían a contratarlo" value={`${Math.round(passport.brandRehireRate * 100)}%`} />
-            <Stat label="Aprobado primera entrega" value={`${Math.round(passport.firstApprovalRate * 100)}%`} />
-            <Stat label="Tasa de disputas" value={`${Math.round(passport.disputeRate * 100)}%`} />
-          </div>
+          <SectionHeading>Contenido destacado</SectionHeading>
+          <PortfolioGallery items={creator.portfolioItems} />
         </div>
       )}
 
-      {creator.marketplaces.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-lg font-semibold">Marketplaces</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {creator.marketplaces.map((m) => (
-              <MarketplaceCard key={m.id} marketplace={m} />
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* 4. Audiencia y redes sociales */}
       {creator.socialAccounts.length > 0 && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold">Redes sociales</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <SectionHeading>Audiencia y redes</SectionHeading>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5">
             {creator.socialAccounts.map((s) => {
               const style = PLATFORM_STYLE[s.platform];
               const Icon = style?.icon ?? ExternalLink;
               return (
                 <a key={s.id} href={s.profileUrl} target="_blank" rel="noreferrer">
-                  <Card className="flex items-center gap-3 p-3 transition hover:shadow-md">
+                  <Card className="flex items-center gap-3 rounded-[20px] p-3 transition hover:shadow-md">
                     <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${style?.bg ?? "bg-muted-surface"}`}>
                       <Icon className={`size-5 ${style?.text ?? "text-foreground"}`} />
                     </span>
@@ -270,20 +225,57 @@ function PublicPassport() {
         </div>
       )}
 
-      {creator.portfolioItems && creator.portfolioItems.length > 0 && (
+      {/* 5. Creator Passport - métricas verificables */}
+      {passport && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold">Portfolio</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {creator.portfolioItems.map((item) => (
-              <SocialEmbed key={item.id} item={item} />
-            ))}
+          <SectionHeading>Creator Passport</SectionHeading>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
+            <Stat label="Score" value={`${Math.round(passport.creatorCommerceScore)}/100`} />
+            <Stat label="Campañas completadas" value={String(passport.campaignsCompleted)} />
+            {passport.campaignsCompleted > 0 ? (
+              <>
+                <Stat label="Entregas a tiempo" value={`${Math.round(passport.onTimeDeliveryRate * 100)}%`} />
+                <Stat label="Calificación promedio" value={passport.avgRating ? passport.avgRating.toFixed(1) : "—"} />
+                <Stat label="Volverían a contratarlo" value={`${Math.round(passport.brandRehireRate * 100)}%`} />
+                <Stat label="Aprobado primera entrega" value={`${Math.round(passport.firstApprovalRate * 100)}%`} />
+                <Stat label="Tasa de disputas" value={`${Math.round(passport.disputeRate * 100)}%`} />
+              </>
+            ) : (
+              <Card className="col-span-2 flex items-center rounded-[20px] p-4 text-sm text-muted sm:col-span-3">
+                Creador nuevo en la plataforma - todavía sin campañas completadas para medir.
+              </Card>
+            )}
           </div>
         </div>
       )}
 
+      {/* 6. Categorías, marketplaces y disponibilidad */}
+      {(creator.categories.length > 0 || creator.marketplaces.length > 0) && (
+        <div>
+          <SectionHeading>Categorías y marketplaces</SectionHeading>
+          {creator.categories.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {creator.categories.map((c) => (
+                <Badge key={c.categoryId} variant={paletteVariant(c.category.name)}>
+                  {c.category.name}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {creator.marketplaces.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+              {creator.marketplaces.map((m) => (
+                <MarketplaceCard key={m.id} marketplace={m} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 7. Reseñas */}
       {reviews && reviews.data.length > 0 && (
         <div>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
+          <h2 className="mb-3 flex items-center gap-2 text-[21px] font-bold tracking-[-0.035em] sm:text-[24px]">
             Reseñas
             <span className="flex items-center gap-1 text-sm font-normal text-muted">
               <Star className="size-3.5 fill-warning text-warning" />
@@ -292,7 +284,7 @@ function PublicPassport() {
           </h2>
           <ul className="flex flex-col gap-3">
             {reviews.data.map((r) => (
-              <Card key={r.id} className="p-4">
+              <Card key={r.id} className="rounded-[20px] p-4">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-0.5">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -301,23 +293,22 @@ function PublicPassport() {
                   </span>
                   <span className="text-xs text-muted">{new Date(r.createdAt).toLocaleDateString("es-MX")}</span>
                 </div>
-                {r.comments && <p className="mt-1 text-sm text-foreground">{r.comments}</p>}
+                {r.comments && <p className="mt-1 text-sm leading-[1.6] text-foreground">{r.comments}</p>}
               </Card>
             ))}
           </ul>
         </div>
       )}
 
-      <Card className="relative flex flex-col items-center gap-3 overflow-hidden bg-gradient-to-br from-primary via-accent to-chart-5 p-8 text-center shadow-lg">
-        <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-white/10 blur-2xl" />
-        <div className="pointer-events-none absolute -left-10 bottom-0 size-40 rounded-full bg-white/10 blur-2xl" />
-        <p className="text-lg font-bold text-primary-foreground sm:text-xl">
-          ¿Sos una marca y querés trabajar con {creator.displayName}?
-        </p>
-        <p className="max-w-md text-sm text-primary-foreground/90">
+      {/* 8. CTA final para marcas */}
+      <Card className="relative flex flex-col items-center gap-3 overflow-hidden rounded-[24px] bg-gradient-to-br from-passport-navy via-passport-navy-2 to-passport-navy p-8 text-center shadow-lg">
+        <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-passport-mint/20 blur-2xl" />
+        <div className="pointer-events-none absolute -left-10 bottom-0 size-40 rounded-full bg-accent/20 blur-2xl" />
+        <p className="relative text-lg font-bold text-white sm:text-xl">¿Sos una marca y querés trabajar con {creator.displayName}?</p>
+        <p className="relative max-w-md text-sm leading-[1.6] text-white/80">
           Creá una cuenta gratis en creator.hub para invitarlo a tu próxima campaña.
         </p>
-        <Link href="/register">
+        <Link href="/register" className="relative">
           <Button size="lg" variant="secondary" className="mt-1">
             Crear cuenta gratis
           </Button>
