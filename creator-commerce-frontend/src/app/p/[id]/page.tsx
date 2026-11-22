@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { BadgeCheck, CheckCircle2, Camera, ExternalLink, MessageCircle, Music2, Play, Star, type LucideIcon } from "lucide-react";
 import { PublicShell } from "@/components/tools/public-shell";
+import { SocialEmbed } from "@/components/social-embed";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -187,6 +188,17 @@ function PublicPassport() {
                 </a>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {creator.portfolioItems && creator.portfolioItems.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-lg font-semibold">Portfolio</h2>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {creator.portfolioItems.map((item) => (
+              <SocialEmbed key={item.id} item={item} />
+            ))}
           </div>
         </div>
       )}
