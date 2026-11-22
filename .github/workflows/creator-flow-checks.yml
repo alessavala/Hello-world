@@ -8,6 +8,7 @@ on:
       - '.github/workflows/creator-flow-checks.yml'
   push:
     branches:
+      - 'main'
       - 'feat/passport-amazon-commerce-experience'
 
 jobs:
