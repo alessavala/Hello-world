@@ -73,6 +73,8 @@ export interface CreatorProfile {
   bio: string | null;
   country: string;
   city: string | null;
+  age?: number | null;
+  familyRole?: 'PAPA' | 'MAMA' | 'FAMILIA' | null;
   profilePhotoUrl: string | null;
   turnaroundDays: number;
   baseRate: string | null;
@@ -277,6 +279,8 @@ export interface CreatorSearchParams {
   minFollowers?: number;
   minAverageViews?: number;
   minCreatorScore?: number;
+  maxBaseRate?: number;
   verificationLevel?: VerificationLevel;
-  sortBy?: "reliabilityScore" | "followers" | "createdAt";
+  verifiedOnly?: boolean;
+  sortBy?: "reliabilityScore" | "followers" | "createdAt" | "baseRateAsc" | "baseRateDesc";
 }

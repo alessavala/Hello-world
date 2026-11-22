@@ -70,7 +70,10 @@ export function SocialLoginButtons({ role, onSuccess, onError }: Props) {
   const { loginWithGoogle, loginWithFacebook } = useAuth();
   const googleContainerRef = useRef<HTMLDivElement>(null);
   const roleRef = useRef(role);
-  roleRef.current = role;
+
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleContainerRef.current) return;

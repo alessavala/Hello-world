@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -19,6 +20,8 @@ export class UpsertCreatorDto {
   @IsOptional() @IsString() bio?: string;
   @IsString() country: string;
   @IsOptional() @IsString() city?: string;
+  @IsOptional() @IsInt() @Min(18) @Max(100) age?: number | null;
+  @IsOptional() @IsIn(['PAPA', 'MAMA', 'FAMILIA']) familyRole?: string | null;
   @IsOptional() @IsUrl() profilePhotoUrl?: string;
   @IsOptional() @IsInt() @Min(1) turnaroundDays?: number;
   @IsOptional() @IsNumber() @Min(0) baseRate?: number;
@@ -38,11 +41,13 @@ export class CreatorSearchDto extends PaginationDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) minAverageViews?: number;
   @IsOptional() @Type(() => Number) @Min(0) @Max(1) minEngagementRate?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) minCreatorScore?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) maxBaseRate?: number;
   @IsOptional() @IsEnum(VerificationLevel) verificationLevel?: VerificationLevel;
+  @IsOptional() @Type(() => Boolean) @IsBoolean() verifiedOnly?: boolean;
   @IsOptional() @IsBoolean() @Type(() => Boolean) acceptsProduct?: boolean;
   @IsOptional() @IsBoolean() @Type(() => Boolean) acceptsFixedFee?: boolean;
   @IsOptional() @IsBoolean() @Type(() => Boolean) acceptsCommission?: boolean;
-  @IsOptional() @IsEnum(['reliabilityScore', 'followers', 'createdAt'] as const) sortBy?: 'reliabilityScore' | 'followers' | 'createdAt';
+  @IsOptional() @IsIn(['reliabilityScore', 'createdAt', 'baseRateAsc', 'baseRateDesc', 'followers']) sortBy?: 'reliabilityScore' | 'createdAt' | 'baseRateAsc' | 'baseRateDesc' | 'followers';
 }
 
 export class CreateSocialAccountDto {
