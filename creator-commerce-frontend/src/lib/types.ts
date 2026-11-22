@@ -48,6 +48,8 @@ export interface CreatorMarketplace {
   marketplace: Marketplace;
   verified: boolean;
   profileUrl: string | null;
+  availableForLive: boolean;
+  availableForProductCollab: boolean;
 }
 
 export interface CreatorCategory {
