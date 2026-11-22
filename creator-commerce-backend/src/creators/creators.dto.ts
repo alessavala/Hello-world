@@ -60,6 +60,8 @@ export class CreateMarketplaceDto {
   @IsEnum(Marketplace) marketplace: Marketplace;
   @IsOptional() @IsUrl() profileUrl?: string;
   @IsOptional() @IsUrl() evidenceUrl?: string;
+  @IsOptional() @IsBoolean() availableForLive?: boolean;
+  @IsOptional() @IsBoolean() availableForProductCollab?: boolean;
 }
 
 export class UpdateMarketplaceDto extends PartialType(CreateMarketplaceDto) {}
