@@ -33,6 +33,16 @@ function tiktokVideoId(url: string): string | undefined {
   return url.match(/\/video\/(\d+)/)?.[1];
 }
 
+// Covers youtube.com/watch?v=, youtu.be/, youtube.com/shorts/ and
+// youtube.com/embed/ - whichever format a creator happens to paste.
+function youtubeVideoId(url: string): string | undefined {
+  return url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/)?.[1];
+}
+
+function isYoutubeShort(url: string): boolean {
+  return /youtube\.com\/shorts\//.test(url);
+}
+
 export function SocialEmbed({ item }: { item: PortfolioItem }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scriptSrc = EMBED_SCRIPTS[item.platform];
@@ -70,6 +80,24 @@ export function SocialEmbed({ item }: { item: PortfolioItem }) {
         </blockquote>
       </div>
     );
+  }
+
+  if (item.platform === "YOUTUBE") {
+    const videoId = youtubeVideoId(item.contentUrl);
+    if (videoId) {
+      const short = isYoutubeShort(item.contentUrl);
+      return (
+        <div className={`shrink-0 overflow-hidden rounded-2xl bg-black ${short ? "aspect-[9/16] w-40" : "aspect-video w-64"}`}>
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title={item.title}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
   }
 
   return (
