@@ -147,10 +147,12 @@ export default function Home() {
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Así es el contenido que generan nuestros creadores</h2>
           <p className="max-w-xl text-sm text-muted">Ejemplos reales de UGC entregado en campañas con marcas de la plataforma.</p>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 sm:justify-center sm:overflow-visible sm:flex-wrap">
+        <div className="flex gap-4 overflow-x-auto pb-2 sm:flex-wrap sm:justify-center sm:overflow-visible">
           {SAMPLE_VIDEOS.map((v) => (
-            <div key={v.driveFileId} className="flex w-40 shrink-0 flex-col gap-2">
-              <div className="aspect-[9/16] w-40 overflow-hidden rounded-2xl bg-black shadow-sm">
+            <div key={v.driveFileId} className="flex w-64 shrink-0 flex-col gap-2">
+              {/* Drive's preview player breaks its own layout below ~240px wide,
+                  so this card needs to stay roomy even though the source clips are vertical. */}
+              <div className="aspect-[9/16] w-64 overflow-hidden rounded-2xl bg-black shadow-sm">
                 <iframe
                   src={`https://drive.google.com/file/d/${v.driveFileId}/preview`}
                   title={v.title}
