@@ -61,7 +61,7 @@ describe('computeMatchScore', () => {
   it('scores a perfectly matched, proven creator near the top of the scale', () => {
     const creator = baseCreator({
       categories: [{ creatorId: 'creator-1', categoryId: 'category-1', createdAt: new Date() }],
-      marketplaces: [{ id: 'm1', creatorId: 'creator-1', marketplace: 'TIKTOK_SHOP', profileUrl: null, verified: true, evidenceUrl: null, createdAt: new Date(), updatedAt: new Date() }],
+      marketplaces: [{ id: 'm1', creatorId: 'creator-1', marketplace: 'TIKTOK_SHOP', profileUrl: null, verified: true, evidenceUrl: null, availableForLive: false, availableForProductCollab: false, createdAt: new Date(), updatedAt: new Date() }],
       socialAccounts: [{ id: 's1', creatorId: 'creator-1', platform: 'TIKTOK', username: 'x', profileUrl: 'https://x', followers: 10000, averageViews: 5000, engagementRate: 0.1, verifiedAt: null, createdAt: new Date(), updatedAt: new Date() }],
       campaignsCompleted: 20,
       avgRating: 5,
