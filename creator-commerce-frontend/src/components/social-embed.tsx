@@ -78,8 +78,13 @@ export function SocialEmbed({ item }: { item: PortfolioItem }) {
       const short = isYoutubeShort(item.contentUrl);
       return (
         <div className={`mx-auto overflow-hidden rounded-2xl bg-black ${short ? "aspect-[9/16] max-w-xs" : "aspect-video w-full"}`}>
+          {/* autoplay=1&mute=1: every browser blocks autoplay-with-sound
+              regardless of this iframe's own `allow` list, so muted-autoplay
+              is the only kind that actually starts on load. YouTube's own
+              player still shows its unmute control, so sound stays one click
+              away instead of forced off. */}
           <iframe
-            src={`https://www.youtube.com/embed/${videoId}`}
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
             title={item.title}
             className="h-full w-full"
             referrerPolicy="strict-origin-when-cross-origin"
@@ -96,7 +101,7 @@ export function SocialEmbed({ item }: { item: PortfolioItem }) {
       href={item.contentUrl}
       target="_blank"
       rel="noreferrer"
-      className="relative flex aspect-[9/16] w-40 shrink-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-brand-pill p-3 text-center"
+      className="relative mx-auto flex aspect-[9/16] w-full max-w-xs flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl bg-brand-pill p-3 text-center"
     >
       {item.thumbnailUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
