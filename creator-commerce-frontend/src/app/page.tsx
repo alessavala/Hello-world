@@ -23,6 +23,17 @@ const BRAND_FEATURES = [
   "Guardá tus creadores favoritos y chateá sin salir de la plataforma.",
 ];
 
+// Real UGC samples (product demos, no creator names attached) to show what
+// campaign content actually looks like - embedded straight from Drive via
+// its file preview iframe, no video hosted on our own infra.
+const SAMPLE_VIDEOS: { title: string; driveFileId: string }[] = [
+  { title: "Tobillera deportiva", driveFileId: "1RuzmUgvQ_GrLHBpWKY56QMNdKBUoTEA0" },
+  { title: "Rodillera deportiva", driveFileId: "1engEM5QpO_EE1MWSInZRRX-qiCSUvBos" },
+  { title: "Mallas de compresión", driveFileId: "1swCi3nhf8TIN6CnJDAGBnMFtxDUxwNbc" },
+  { title: "Cinta bucal para dormir", driveFileId: "1DPpUGpkkIVJm_bQb5GjIQ_E70xd8t4hM" },
+  { title: "Scooter eléctrico", driveFileId: "1yrPd5HpWYjb4Kce8_Kmp9s3v0gZFmgNp" },
+];
+
 export default function Home() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -123,6 +134,35 @@ export default function Home() {
             ))}
           </ul>
         </Card>
+      </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.25, ease: "easeOut" }}
+        className="mx-auto w-full max-w-5xl px-4 pb-20 sm:px-8"
+      >
+        <div className="mb-6 flex flex-col items-center gap-2 text-center">
+          <Badge variant="indigo">Contenido real</Badge>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Así es el contenido que generan nuestros creadores</h2>
+          <p className="max-w-xl text-sm text-muted">Ejemplos reales de UGC entregado en campañas con marcas de la plataforma.</p>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-2 sm:justify-center sm:overflow-visible sm:flex-wrap">
+          {SAMPLE_VIDEOS.map((v) => (
+            <div key={v.driveFileId} className="flex w-40 shrink-0 flex-col gap-2">
+              <div className="aspect-[9/16] w-40 overflow-hidden rounded-2xl bg-black shadow-sm">
+                <iframe
+                  src={`https://drive.google.com/file/d/${v.driveFileId}/preview`}
+                  title={v.title}
+                  className="h-full w-full"
+                  allow="autoplay"
+                  allowFullScreen
+                />
+              </div>
+              <p className="text-center text-xs text-muted">{v.title}</p>
+            </div>
+          ))}
+        </div>
       </motion.section>
 
       <footer className="border-t border-border px-4 py-6 text-center text-xs text-muted sm:px-8">
