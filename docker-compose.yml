@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - creator_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Not exposed to the host - only reachable from other services in this
+    # project's Docker network, never from the public internet.
+
+  backend:
+    build:
+      context: ./creator-commerce-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      PORT: "4000"
+      CORS_ORIGIN: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Creator Commerce <no-reply@localhost>}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+    # No `ports:` here on purpose - only the `caddy` service below is
+    # published to the host; it reaches this container over the project's
+    # internal Docker network by service name (backend:4000).
+
+  frontend:
+    build:
+      context: ./creator-commerce-frontend
+      args:
+        # NEXT_PUBLIC_* vars are baked into the JS bundle at build time, so
+        # they must be passed here (build args), not just as runtime env.
+        NEXT_PUBLIC_API_URL: ${API_URL}/api/v1
+        NEXT_PUBLIC_WS_URL: ${API_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # Same as backend: no `ports:`, reached by `caddy` as frontend:3000.
+
+  # Public ingress: terminates HTTPS and reverse-proxies the two domains to
+  # the frontend/backend containers. Caddy requests/renews its own Let's
+  # Encrypt certificates automatically the first time each domain resolves
+  # here - no certbot, no manual cert handling.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      FRONTEND_DOMAIN: ${FRONTEND_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  creator_postgres:
+  caddy_data:
+  caddy_config:

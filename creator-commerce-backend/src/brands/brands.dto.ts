@@ -1,0 +1,1 @@
+import { IsOptional,IsString,IsUrl } from 'class-validator'; export class UpsertBrandDto { @IsString() businessName:string; @IsString() country:string; @IsOptional() @IsUrl() website?:string; @IsOptional() @IsUrl() logoUrl?:string; @IsOptional() @IsString() description?:string; }

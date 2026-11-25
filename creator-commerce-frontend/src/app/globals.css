@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.875rem;
+
+  /* Base surfaces */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Brand */
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --secondary: #115e59;
+  --secondary-foreground: #ffffff;
+  --accent: #14b8a6;
+  --accent-foreground: #0f172a;
+
+  /* Neutral text/surfaces. --muted is a legible de-emphasized TEXT color
+     (matches how the whole app already uses `text-muted`); --muted-surface
+     is the separate pale-fill color for new components' subtle backgrounds
+     (skeletons, hover states) so the two needs don't collide. */
+  --muted: #64748b;
+  --muted-foreground: #64748b;
+  --muted-surface: #f1f5f9;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #14b8a6;
+
+  /* Status */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+
+  /* Charts */
+  --chart-1: #0f766e;
+  --chart-2: #14b8a6;
+  --chart-3: #f59e0b;
+  --chart-4: #6366f1;
+  --chart-5: #ec4899;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-border: #e5e7eb;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+
+  /* Legacy tokens (pre-redesign) - kept so pages not yet migrated to the new
+     design system don't break or go illegible; remapped onto the new
+     palette instead of the old warm one so nothing clashes visually. */
+  --surface: var(--card);
+  --accent-pink: #ec4899;
+  --accent-pink-foreground: #ffffff;
+  --accent-olive: var(--success);
+  --accent-olive-foreground: var(--success-foreground);
+  --accent-yellow: var(--warning);
+  /* Always used as text on a translucent /20 tint of --accent-yellow (never
+     a solid fill), so this needs to be dark, not white. */
+  --accent-yellow-foreground: #78350f;
+  --brand-pill: #ccfbf1;
+}
+
+.dark {
+  --background: #0a0e17;
+  --foreground: #f1f5f9;
+  --card: #0f172a;
+  --card-foreground: #f1f5f9;
+  --popover: #0f172a;
+  --popover-foreground: #f1f5f9;
+
+  --primary: #2dd4bf;
+  --primary-foreground: #052e2b;
+  --secondary: #134e4a;
+  --secondary-foreground: #f1f5f9;
+  --accent: #14b8a6;
+  --accent-foreground: #052e2b;
+
+  --muted: #94a3b8;
+  --muted-foreground: #94a3b8;
+  --muted-surface: #1e293b;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #2dd4bf;
+
+  --destructive: #f87171;
+  --destructive-foreground: #450a0a;
+  --success: #4ade80;
+  --success-foreground: #052e16;
+  --warning: #fbbf24;
+  --warning-foreground: #451a03;
+
+  --chart-1: #2dd4bf;
+  --chart-2: #14b8a6;
+  --chart-3: #fbbf24;
+  --chart-4: #818cf8;
+  --chart-5: #f472b6;
+
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-border: #1e293b;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f1f5f9;
+
+  --surface: var(--card);
+  --accent-pink: #f472b6;
+  --accent-pink-foreground: #451a03;
+  --accent-olive: var(--success);
+  --accent-olive-foreground: var(--success-foreground);
+  --accent-yellow: var(--warning);
+  --accent-yellow-foreground: var(--warning-foreground);
+  --brand-pill: #134e4a;
+}
+
+/* Creative Commerce palette for the Creator Passport only (hero, animated
+   background, CTA surfaces) - scoped tokens instead of touching the app-wide
+   palette above, which already carries the same teal/background/text values. */
+:root {
+  --passport-navy: #0b1220;
+  --passport-navy-2: #101c35;
+  --passport-mint: #5eead4;
+}
+.dark {
+  --passport-navy: #0b1220;
+  --passport-navy-2: #101c35;
+  --passport-mint: #5eead4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-surface: var(--muted-surface);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
+  /* Legacy tokens - see the comment next to their definitions above. */
+  --color-surface: var(--surface);
+  --color-accent-pink: var(--accent-pink);
+  --color-accent-pink-foreground: var(--accent-pink-foreground);
+  --color-accent-olive: var(--accent-olive);
+  --color-accent-olive-foreground: var(--accent-olive-foreground);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-yellow-foreground: var(--accent-yellow-foreground);
+  --color-brand-pill: var(--brand-pill);
+
+  --color-passport-navy: var(--passport-navy);
+  --color-passport-navy-2: var(--passport-navy-2);
+  --color-passport-mint: var(--passport-mint);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-inter);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+/* AnimatedCommerceBackground - a handful of slow, asynchronous float/drift
+   keyframes. Each element gets its own duration/delay inline so nothing
+   moves in lockstep; reduced-motion freezes all of them in place. */
+@keyframes passport-float-a {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(6px, -14px, 0); }
+}
+@keyframes passport-float-b {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-10px, 10px, 0); }
+}
+@keyframes passport-float-c {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(8px, 8px, 0); }
+}
+@keyframes passport-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(3%, -4%, 0) scale(1.06); }
+}
+.passport-anim-a { animation: passport-float-a var(--passport-anim-duration, 16s) ease-in-out infinite; animation-delay: var(--passport-anim-delay, 0s); }
+.passport-anim-b { animation: passport-float-b var(--passport-anim-duration, 20s) ease-in-out infinite; animation-delay: var(--passport-anim-delay, 0s); }
+.passport-anim-c { animation: passport-float-c var(--passport-anim-duration, 14s) ease-in-out infinite; animation-delay: var(--passport-anim-delay, 0s); }
+.passport-anim-drift { animation: passport-drift var(--passport-anim-duration, 24s) ease-in-out infinite; animation-delay: var(--passport-anim-delay, 0s); }
+
+@media (prefers-reduced-motion: reduce) {
+  .passport-anim-a, .passport-anim-b, .passport-anim-c, .passport-anim-drift {
+    animation: none;
+  }
+}
